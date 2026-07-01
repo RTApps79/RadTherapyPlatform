@@ -1,0 +1,48 @@
+/**
+ * RTApps RadTherapyPlatform — Theme Tokens
+ * Copyright (c) 2026 Kevin Kindle. All Rights Reserved.
+ *
+ * Tokens derived from the RTApps brand mockups: deep navy background,
+ * cyan accent, card-based dark panels. Centralizing these as CSS custom
+ * properties means later modules (legacy OIS/TPS wrapped in Phase 2) can
+ * gradually adopt the same palette instead of shipping their own colors.
+ */
+
+:root {
+  /* Surface */
+  --rtapps-bg: #0a1420;
+  --rtapps-bg-elevated: #0e1b2c;
+  --rtapps-panel: #101e33;
+  --rtapps-panel-border: #1e3350;
+  --rtapps-panel-border-hover: #2a4a70;
+
+  /* Text */
+  --rtapps-text-primary: #eaf2fb;
+  --rtapps-text-secondary: #8fa6c2;
+  --rtapps-text-muted: #5b7292;
+
+  /* Brand / accent */
+  --rtapps-accent: #22d3ee;
+  --rtapps-accent-strong: #06b6d4;
+  --rtapps-accent-soft: rgba(34, 211, 238, 0.12);
+
+  /* Status */
+  --rtapps-success: #34d399;
+  --rtapps-warning: #fbbf24;
+  --rtapps-danger: #f87171;
+
+  /* Type */
+  --rtapps-font-display: "Segoe UI", "Inter", system-ui, sans-serif;
+  --rtapps-font-body: "Segoe UI", "Inter", system-ui, sans-serif;
+  --rtapps-font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+
+  /* Layout */
+  --rtapps-radius-sm: 6px;
+  --rtapps-radius-md: 10px;
+  --rtapps-radius-lg: 16px;
+  --rtapps-shell-nav-width: 248px;
+  --rtapps-header-height: 60px;
+  --rtapps-footer-height: 34px;
+
+  color-scheme: dark;
+}

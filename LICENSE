@@ -1,0 +1,17 @@
+RTApps RadTherapyPlatform
+Copyright (c) 2026 Kevin Kindle
+All Rights Reserved.
+
+This software and associated source code, documentation, and assets are the
+proprietary property of Kevin Kindle. No part of this repository may be
+copied, modified, distributed, sublicensed, or used to create derivative
+works without prior written permission from the copyright holder, except
+as expressly permitted for authorized collaborators on this project.
+
+RTApps RadTherapyPlatform is an educational simulation and training
+platform. It is NOT a certified medical device and must not be used for
+actual clinical diagnosis, treatment planning, or treatment delivery.
+
+Third-party libraries used by this project (see THIRD_PARTY_NOTICES.md)
+remain licensed under their own respective open-source licenses and retain
+their required notices.

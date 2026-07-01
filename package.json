@@ -1,0 +1,33 @@
+{
+  "name": "rtapps-radtherapyplatform",
+  "version": "0.1.0",
+  "private": true,
+  "description": "RTApps RadTherapyPlatform - browser-based radiation oncology education, simulation, imaging, and workflow platform.",
+  "author": "Kevin Kindle",
+  "license": "UNLICENSED",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint . --ext .ts",
+    "format": "prettier --write \"src/**/*.{ts,css,html}\""
+  },
+  "dependencies": {
+    "three": "^0.169.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.0",
+    "@types/three": "^0.169.0",
+    "@typescript-eslint/eslint-plugin": "^8.15.0",
+    "@typescript-eslint/parser": "^8.15.0",
+    "eslint": "^9.15.0",
+    "jsdom": "^25.0.1",
+    "prettier": "^3.3.3",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.11",
+    "vitest": "^2.1.5"
+  }
+}
