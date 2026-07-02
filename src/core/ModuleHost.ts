@@ -108,6 +108,7 @@ export class ModuleHost {
       state: this.state,
       logger: this.log.scope(module.id),
       route: this.router.getCurrentRoute(),
+      router: this.router,
     });
 
     this.activeCleanup = cleanup;

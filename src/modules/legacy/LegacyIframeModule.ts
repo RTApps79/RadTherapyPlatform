@@ -22,7 +22,7 @@
 
 import type { ModuleDefinition, ModuleContext } from "@core/types";
 import { branding } from "@config/branding";
-import { isLegacyBridgeOutbound } from "./legacyBridge";
+import { isLegacyBridgeOutbound, postToLegacyFrame } from "./legacyBridge";
 
 export interface LegacyIframeModuleConfig {
   id: string;
@@ -41,7 +41,7 @@ export function createLegacyIframeModule(config: LegacyIframeModuleConfig): Modu
     order: config.order,
     status: "legacy-wrapped",
     mount(context: ModuleContext) {
-      const { container, logger } = context;
+      const { container, logger, state, eventBus } = context;
 
       container.innerHTML = "";
 
@@ -74,6 +74,26 @@ export function createLegacyIframeModule(config: LegacyIframeModuleConfig): Modu
       wrapper.appendChild(iframe);
       container.appendChild(wrapper);
 
+      // If a patient is already selected (chosen in Patient Library before
+      // navigating here, or while this module was previously mounted),
+      // tell the legacy app as soon as its document finishes loading —
+      // this is what lets e.g. the OIS module auto-open the right chart
+      // without the user re-selecting the patient inside it.
+      const relayCurrentPatient = () => {
+        const currentPatientId = state.getState().currentPatientId;
+        if (currentPatientId) {
+          postToLegacyFrame(iframe, "patient:selected", { patientId: currentPatientId });
+        }
+      };
+      iframe.addEventListener("load", relayCurrentPatient);
+
+      // Relay live patient:selected events for as long as this module
+      // stays mounted, so switching patients while already viewing e.g.
+      // OIS updates it immediately, without a reload.
+      const unsubscribePatientSelected = eventBus.on("patient:selected", ({ patientId }) => {
+        postToLegacyFrame(iframe, "patient:selected", { patientId });
+      });
+
       const handleMessage = (event: MessageEvent) => {
         if (event.source !== iframe.contentWindow) return;
         if (!isLegacyBridgeOutbound(event.data)) return;
@@ -89,6 +109,8 @@ export function createLegacyIframeModule(config: LegacyIframeModuleConfig): Modu
       logger.info(`Mounted legacy iframe module "${config.id}" -> ${iframe.src}`);
 
       return () => {
+        iframe.removeEventListener("load", relayCurrentPatient);
+        unsubscribePatientSelected();
         window.removeEventListener("message", handleMessage);
         logger.debug(`Unmounted legacy iframe module "${config.id}"`);
       };

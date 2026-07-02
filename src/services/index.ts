@@ -21,6 +21,7 @@ import { DicomImportService } from "./DicomImportService";
 import { PlanService } from "./PlanService";
 import { WorkflowService } from "./WorkflowService";
 import { RenderingService } from "./RenderingService";
+import { PatientLibraryService } from "./PatientLibraryService";
 
 import {
   PatientServiceToken,
@@ -31,6 +32,7 @@ import {
   PlanServiceToken,
   WorkflowServiceToken,
   RenderingServiceToken,
+  PatientLibraryServiceToken,
 } from "./tokens";
 
 export function registerCoreServices(
@@ -56,6 +58,16 @@ export function registerCoreServices(
   services.registerSingleton(PlanServiceToken, () => new PlanService());
   services.registerSingleton(WorkflowServiceToken, () => new WorkflowService(eventBus));
   services.registerSingleton(RenderingServiceToken, () => new RenderingService(logger.scope("RenderingService")));
+
+  services.registerSingleton(
+    PatientLibraryServiceToken,
+    (c) =>
+      new PatientLibraryService(
+        c.resolve(PatientServiceToken),
+        c.resolve(WorkflowServiceToken),
+        logger.scope("PatientLibraryService"),
+      ),
+  );
 }
 
 export * from "./tokens";
@@ -67,3 +79,4 @@ export { DicomImportService } from "./DicomImportService";
 export { PlanService } from "./PlanService";
 export { WorkflowService } from "./WorkflowService";
 export { RenderingService } from "./RenderingService";
+export { PatientLibraryService } from "./PatientLibraryService";

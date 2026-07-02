@@ -39,6 +39,14 @@ function bootstrap(): void {
   const router = new Router(appConfig.defaultModuleId);
   const moduleHost = new ModuleHost(router, services, eventBus, state, logger);
 
+  // Cross-cutting event -> state sync. Kept centralized here (rather than
+  // inside PatientService) so services stay decoupled from StateStore;
+  // this is the one place that translates "something happened" events
+  // into "current session state" that any module can read.
+  eventBus.on("patient:selected", ({ patientId }) => {
+    state.setState({ currentPatientId: patientId });
+  });
+
   const root = document.getElementById("app-root");
   if (!root) {
     throw new Error("main.ts: #app-root element not found in index.html");

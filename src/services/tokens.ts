@@ -18,6 +18,7 @@ import type { DicomImportService } from "./DicomImportService";
 import type { PlanService } from "./PlanService";
 import type { WorkflowService } from "./WorkflowService";
 import type { RenderingService } from "./RenderingService";
+import type { PatientLibraryService } from "./PatientLibraryService";
 
 export const PatientServiceToken = createToken<PatientService>("PatientService");
 export const CourseServiceToken = createToken<CourseService>("CourseService");
@@ -27,3 +28,4 @@ export const DicomImportServiceToken = createToken<DicomImportService>("DicomImp
 export const PlanServiceToken = createToken<PlanService>("PlanService");
 export const WorkflowServiceToken = createToken<WorkflowService>("WorkflowService");
 export const RenderingServiceToken = createToken<RenderingService>("RenderingService");
+export const PatientLibraryServiceToken = createToken<PatientLibraryService>("PatientLibraryService");

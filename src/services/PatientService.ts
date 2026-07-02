@@ -39,6 +39,25 @@ export class PatientService {
     return patient;
   }
 
+  /**
+   * Insert or update a patient using a caller-supplied id, rather than
+   * generating one. Used by PatientLibraryService when importing records
+   * from an external dataset (e.g. the EMR patient library) where the id
+   * must match the source system's own identifier so cross-module
+   * messages (like the legacy OIS bridge) can look the record up.
+   */
+  upsert(patient: Omit<Patient, "createdAt" | "updatedAt"> & { createdAt?: string; updatedAt?: string }): Patient {
+    const existing = this.patients.get(patient.id);
+    const now = new Date().toISOString();
+    const full: Patient = {
+      ...patient,
+      createdAt: existing?.createdAt ?? patient.createdAt ?? now,
+      updatedAt: now,
+    };
+    this.patients.set(full.id, full);
+    return full;
+  }
+
   get(id: EntityId): Patient | undefined {
     return this.patients.get(id);
   }

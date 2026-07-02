@@ -2,31 +2,30 @@
  * RTApps RadTherapyPlatform — DICOM Import Service
  * Copyright (c) 2026 Kevin Kindle. All Rights Reserved.
  *
- * Phase 1 defines the import contract (local file, folder, and hosted
- * URL/manifest import) so every module can be written against a stable
- * API today. The actual decode pipeline — dcmjs for DICOM CT, Siemens IMA
- * support, and NIfTI/NIfTI-segmentation loading via a NiftiImportService —
- * is Phase 3 (Imaging Core Extraction) work.
- *
- * Until Phase 3 lands, `importLocalFiles`/`importFolder`/`importFromUrl`
- * register a *placeholder* ImageStack (no real pixel data) so the shared
- * dataset workflow — one dataset, opened across OIS/CT-Sim/TPS/Physics/
- * Treatment Delivery — can be built, wired, and tested end-to-end before
- * the decoder exists.
+ * Phase 3 (Imaging Core Extraction) — real decoding, not placeholders.
+ * Local DICOM series (via `dicom-parser`) and NIfTI volumes (gzip +
+ * NIfTI-1 header/voxel parsing) are decoded into the shared `Volume`
+ * shape and registered in `ImagingDatasetRegistry`, so any module that
+ * resolves a dataset by id gets real, calibrated pixel data — the same
+ * dataset, loaded once, usable everywhere the brief calls for (Patient
+ * Library, OIS, CT Simulation, TPS, Physics, Treatment Delivery,
+ * Education, Reporting).
  */
 
 import type { Logger } from "@core/Logger";
 import type { ImageStack, Series, Modality } from "@models/index";
 import type { ImagingDatasetRegistry } from "./ImagingDatasetRegistry";
 import type { StudySeriesService } from "./StudySeriesService";
+import { loadDicomSeries } from "./imaging/dicomSeriesLoader";
+import { loadNiftiVolume } from "./imaging/niftiVolumeLoader";
+import { generateSyntheticPhantom } from "./imaging/syntheticPhantom";
+import type { Volume } from "./imaging/Volume";
 
 export interface ImportResult {
   imageStack: ImageStack;
   series: Series;
-}
-
-export interface DicomManifestSource {
-  manifestUrl: string;
+  volume: Volume;
+  skippedFiles?: number;
 }
 
 export class DicomImportService {
@@ -36,54 +35,58 @@ export class DicomImportService {
     private readonly logger: Logger,
   ) {}
 
-  /** Import from a browser file picker (`<input type="file" multiple>` FileList). */
-  async importLocalFiles(files: FileList | File[], studyId: string, modality: Modality = "CT"): Promise<ImportResult> {
+  /** Import a local DICOM series (file picker or folder/webkitdirectory input). */
+  async importDicomSeries(files: FileList | File[], studyId: string, modality: Modality = "CT"): Promise<ImportResult> {
     const fileArray = Array.from(files);
-    this.logger.info(`importLocalFiles: ${fileArray.length} file(s) for study "${studyId}"`, {
-      names: fileArray.map((f) => f.name),
-    });
-    return this.registerPlaceholder(studyId, modality, fileArray.length || 1, "dicom");
+    this.logger.info(`importDicomSeries: ${fileArray.length} file(s) for study "${studyId}"`);
+
+    const { volume, skippedFiles } = await loadDicomSeries(fileArray);
+    if (skippedFiles > 0) {
+      this.logger.warn(`importDicomSeries: skipped ${skippedFiles} unusable file(s)`);
+    }
+
+    return this.register(studyId, modality, volume, "dicom", skippedFiles);
   }
 
-  /** Import an entire folder (webkitdirectory input, or drag-and-drop of a directory). */
-  async importFolder(files: FileList | File[], studyId: string, modality: Modality = "CT"): Promise<ImportResult> {
-    return this.importLocalFiles(files, studyId, modality);
+  /** Import a NIfTI (.nii.gz) volume from a URL — e.g. the shared imaging library. */
+  async importNiftiFromUrl(url: string, studyId: string, modality: Modality = "MR", label?: string): Promise<ImportResult> {
+    this.logger.info(`importNiftiFromUrl: "${url}" for study "${studyId}"`);
+    const volume = await loadNiftiVolume(url, label);
+    return this.register(studyId, modality, volume, "nifti");
   }
 
-  /** Import from a hosted URL or a study manifest (JSON list of instance URLs). */
-  async importFromUrl(source: DicomManifestSource, studyId: string, modality: Modality = "CT"): Promise<ImportResult> {
-    this.logger.info(`importFromUrl: "${source.manifestUrl}" for study "${studyId}"`);
-    return this.registerPlaceholder(studyId, modality, 1, "dicom");
+  /** Register a procedurally-generated demo phantom — no upload required, always available. */
+  async importSyntheticPhantom(studyId: string): Promise<ImportResult> {
+    this.logger.info(`importSyntheticPhantom: for study "${studyId}"`);
+    const volume = generateSyntheticPhantom();
+    return this.register(studyId, "CT", volume, "unknown");
   }
 
-  /** Import a NIfTI (.nii/.nii.gz) volume, optionally paired with a segmentation. */
-  async importNifti(files: FileList | File[], studyId: string, modality: Modality = "CT"): Promise<ImportResult> {
-    const fileArray = Array.from(files);
-    this.logger.info(`importNifti: ${fileArray.length} file(s) for study "${studyId}"`);
-    return this.registerPlaceholder(studyId, modality, fileArray.length || 1, "nifti");
-  }
-
-  private async registerPlaceholder(
+  private register(
     studyId: string,
     modality: Modality,
-    sliceCount: number,
+    volume: Volume,
     sourceFormat: ImageStack["sourceFormat"],
-  ): Promise<ImportResult> {
-    const series = this.studySeriesService.addSeries({ studyId, modality });
+    skippedFiles?: number,
+  ): ImportResult {
+    const series = this.studySeriesService.addSeries({
+      studyId,
+      modality,
+      description: volume.meta.seriesDescription,
+    });
 
     const imageStack: ImageStack = {
       id: crypto.randomUUID(),
       seriesId: series.id,
-      sliceCount: Math.max(sliceCount, 1),
+      sliceCount: volume.depth,
       sourceFormat,
     };
 
-    this.datasetRegistry.register(imageStack, modality);
-    this.logger.warn(
-      "Registered a PLACEHOLDER dataset — no pixel data decoded yet. " +
-        "Real DICOM/NIfTI decoding arrives in Phase 3 (Imaging Core Extraction).",
+    this.datasetRegistry.register(imageStack, modality, volume);
+    this.logger.info(
+      `Registered dataset "${imageStack.id}" (${volume.cols}x${volume.rows}x${volume.depth}, ${volume.meta.sourceFormat})`,
     );
 
-    return { imageStack, series };
+    return { imageStack, series, volume, skippedFiles };
   }
 }

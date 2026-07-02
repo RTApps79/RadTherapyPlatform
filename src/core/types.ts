@@ -12,6 +12,7 @@ import type { EventBus } from "./EventBus";
 import type { PlatformEvents } from "./PlatformEvents";
 import type { StateStore, AppState } from "./StateStore";
 import type { Logger } from "./Logger";
+import type { Router } from "./Router";
 
 /** Log severity levels, low to high. */
 export type LogLevel = "debug" | "info" | "warn" | "error";
@@ -32,6 +33,8 @@ export interface ModuleContext {
   state: StateStore<AppState>;
   logger: Logger;
   route: RouteMatch;
+  /** Live router reference — use to navigate to another module (e.g. Patient Library -> OIS). */
+  router: Router;
 }
 
 export interface ModuleDefinition {

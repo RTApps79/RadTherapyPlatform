@@ -1,0 +1,2890 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>4D CT Simulator with Tutorials</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f0f2f5;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        .controls-sidebar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 220px;
+            height: 100%;
+            background-color: #ffffff;
+            padding: 15px;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+            overflow-y: auto;
+            z-index: 10;
+        }
+
+        .sidebar-title {
+            font-weight: bold;
+            margin-top: 15px;
+            margin-bottom: 8px;
+            border-bottom: 1px solid #e0e0e0;
+            padding-bottom: 5px;
+            color: #333;
+        }
+
+        .button-group {
+            margin-bottom: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+            .button-group span {
+                font-size: 0.9em;
+                margin-bottom: 5px;
+                width: 100%;
+                text-align: center;
+            }
+
+            .button-group button {
+                flex-basis: 48%;
+                margin: 2px 0;
+                padding: 5px;
+                border: 1px solid #ccc;
+                background-color: #f8f9fa;
+                border-radius: 4px;
+                cursor: pointer;
+            }
+
+                .button-group button:hover {
+                    background-color: #e2e6ea;
+                }
+
+        .checkbox-group, .slider-group {
+            margin-bottom: 10px;
+            font-size: 0.9em;
+        }
+
+            .checkbox-group input {
+                margin-right: 5px;
+            }
+
+        .slider-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+            .slider-group label {
+                margin-bottom: 4px;
+            }
+
+            .slider-group input[type="range"] {
+                width: 100%;
+            }
+
+        .position-display, .scan-status {
+            width: 100%;
+            background-color: #e9ecef;
+            text-align: center;
+            padding: 5px;
+            border-radius: 4px;
+            font-family: "Courier New", Courier, monospace;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+
+        .anatomical-label {
+            color: black;
+            background-color: rgba(255, 255, 255, 0.7);
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-size: 14px;
+        }
+
+        /* MR slice viewer panel */
+        .mri-panel {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 260px;
+            height: 100%;
+            background-color: #ffffff;
+            padding: 15px;
+            box-shadow: -2px 0 5px rgba(0,0,0,0.1);
+            overflow-y: auto;
+            z-index: 10;
+            box-sizing: border-box;
+        }
+
+        .mri-panel select {
+            width: 100%;
+            padding: 5px;
+            margin-bottom: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background-color: #f8f9fa;
+        }
+
+        .mri-plane-group {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 8px;
+        }
+
+            .mri-plane-group button {
+                flex: 1;
+                padding: 5px 0;
+                border: 1px solid #ccc;
+                background-color: #f8f9fa;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 0.85em;
+            }
+
+            .mri-plane-group button.active {
+                background-color: #0984e3;
+                color: #fff;
+                border-color: #0984e3;
+            }
+
+        .mri-canvas-wrap {
+            width: 100%;
+            background: #000;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            margin-bottom: 8px;
+            min-height: 160px;
+        }
+
+            .mri-canvas-wrap canvas {
+                max-width: 100%;
+                display: block;
+            }
+
+        .mri-slice-readout {
+            width: 100%;
+            background-color: #e9ecef;
+            text-align: center;
+            padding: 5px;
+            border-radius: 4px;
+            font-family: "Courier New", Courier, monospace;
+            font-size: 0.85em;
+            margin-bottom: 8px;
+        }
+
+        .mri-status {
+            font-size: 0.8em;
+            color: #666;
+            min-height: 1.4em;
+            margin-bottom: 8px;
+        }
+
+        /* Tutorial menu styles */
+        .tutorial-menu {
+            max-width: 440px;
+            margin: 40px auto;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px #dfe6e9;
+            padding: 32px;
+        }
+
+            .tutorial-menu h2 {
+                text-align: center;
+            }
+
+        .tutorial-list {
+            list-style: none;
+            padding: 0;
+        }
+
+            .tutorial-list li {
+                margin: 18px 0;
+            }
+
+        .tutorial-btn {
+            display: block;
+            background: #0984e3;
+            color: #fff;
+            padding: 16px 0;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 1.1em;
+            text-align: center;
+            transition: background 0.2s;
+        }
+
+            .tutorial-btn:hover {
+                background: #74b9ff;
+            }
+
+        /* Tutorial overlay styles */
+        .tutorial-highlight {
+            box-shadow: 0 0 8px 3px #00b894 !important;
+            outline: 2px solid #00b894 !important;
+            z-index: 2000 !important;
+            position: relative;
+        }
+
+        /* Begin exercise modal overlay */
+        .begin-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.55);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .begin-modal {
+            width: 420px;
+            max-width: 95%;
+            background: #fff;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+            text-align: center;
+        }
+
+            .begin-modal h3 {
+                margin-top: 0;
+            }
+
+            .begin-modal p.status {
+                font-family: "Courier New", monospace;
+                background: #f1f3f5;
+                padding: 8px;
+                border-radius: 6px;
+                margin: 12px 0;
+            }
+
+            .begin-modal button {
+                margin: 6px;
+                padding: 8px 14px;
+                border-radius: 6px;
+                border: 1px solid #ccc;
+                background: #f8f9fa;
+                cursor: pointer;
+            }
+
+                .begin-modal button.primary {
+                    background: #0984e3;
+                    color: #fff;
+                    border-color: #0777d1;
+                }
+
+        /* Quiz modal styles */
+        .quiz-modal {
+            max-width: 800px;
+            width: 90%;
+            background: #fff;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+            text-align: left;
+            position: relative;
+        }
+
+        .quiz-modal h3 {
+            margin-top: 0;
+            margin-bottom: 12px;
+            font-size: 1.2em;
+        }
+
+        .quiz-modal .status {
+            font-family: "Courier New", monospace;
+            background: #f1f3f5;
+            padding: 8px;
+            border-radius: 6px;
+            margin: 0 0 12px 0;
+            text-align: center;
+        }
+
+        .quiz-modal .button-group {
+            margin-top: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .quiz-modal button {
+            padding: 10px 16px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            background: #f8f9fa;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .quiz-modal button:hover {
+            background: #e2e6ea;
+        }
+
+        .quiz-modal .question {
+            margin-bottom: 20px;
+        }
+
+        .quiz-modal .choices {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .quiz-modal .choices label {
+            margin-bottom: 10px;
+            display: block;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .quiz-modal .choices label:hover {
+            background: #f0f0f0;
+        }
+
+        .quiz-modal .explanation {
+            font-size: 0.9em;
+            color: #555;
+            margin-top: 8px;
+        }
+
+        .quiz-modal .result {
+            margin-top: 10px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="controls-sidebar">
+        <div class="sidebar-title">Camera / View</div>
+        <div class="button-group">
+            <button onclick="resetCamera()">Reset View</button>
+            <button onclick="viewAxial()">Axial View</button>
+            <button onclick="viewSagittal()">Sagittal View</button>
+        </div>
+
+        <!--<div class="sidebar-title">Display Options</div>
+        <div class="checkbox-group">
+            <input type="checkbox" id="showAnatomicalLabelsCheckbox" onchange="toggleAnatomicalLabelsVisibility()" checked>
+            <label for="showAnatomicalLabelsCheckbox">Show Anatomical Labels</label>
+        </div>-->
+        <!--<div class="sidebar-title">Laser Options</div>
+        <div class="checkbox-group">
+            <input type="checkbox" id="lapLasersCheckbox" checked>
+            <label for="lapLasersCheckbox">Show LAP Lasers</label>
+        </div>-->
+        <!--<div class="checkbox-group">
+            <input type="checkbox" id="fixedGantryLasersCheckbox" checked>
+            <label for="fixedGantryLasersCheckbox">Show Fixed Gantry Lasers</label>
+        </div>-->
+        <!--<div class="sidebar-title">Laser Controls</div>
+        <div class="button-group">
+            <span>Lateral (X)</span>
+            <button onclick="moveLasers(-1, 0, 0)">← Left</button>
+            <button onclick="moveLasers(1, 0, 0)">Right →</button>
+        </div>
+        <div class="button-group">
+            <span>Vertical (Y)</span>
+            <button onclick="moveLasers(0, 1, 0)">↑ Up</button>
+            <button onclick="moveLasers(0, -1, 0)">↓ Down</button>
+        </div>
+        <div class="button-group">
+            <span>Laser Long. (Z)</span>
+            <button onclick="moveLasers(0, 0, -1)">← In</button>
+            <button onclick="moveLasers(0, 0, 1)">Out →</button>
+        </div>
+        <div class="button-group">
+            <span>Laser Position</span>
+            <span id="laserPositionDisplay" class="position-display">X:0.0, Y:0.0, Z:0.0</span>
+        </div>-->
+
+        <div class="sidebar-title">Couch Controls</div>
+        <div class="button-group">
+            <span>Lateral (X)</span>
+            <button id="moveCouchXLeft" onclick="moveCouch(-1, 0, 0)">← Left</button>
+            <button id="moveCouchXRight" onclick="moveCouch(1, 0, 0)">Right →</button>
+        </div>
+        <div class="button-group">
+            <span>Vertical (Y)</span>
+            <button id="moveCouchYUp" onclick="moveCouch(0, 1, 0)">↑ Up</button>
+            <button id="moveCouchYDown" onclick="moveCouch(0, -1, 0)">↓ Down</button>
+        </div>
+        <div class="button-group">
+            <span>Couch Long. (Z)</span>
+            <button id="moveCouchZIn" onclick="moveCouch(0, 0, -1)">← In</button>
+            <button id="moveCouchZOut" onclick="moveCouch(0, 0, 1)">Out →</button>
+        </div>
+        <div class="button-group">
+            <span>Couch Position</span>
+            <span id="couchPositionDisplay" class="position-display">X:0.0, Y:0.0, Z:0.0</span>
+        </div>
+
+        <div class="sidebar-title">Model Controls</div>
+        <div class="button-group">
+            <button id="rotateHumanBtn" onclick="rotateHuman180()" disabled>Anterior/Posterior</button>
+            <button id="feetFirstBtn" onclick="setFeetFirst()" disabled>Interior/Superior</button>
+        </div>
+        <div class="button-group">
+            <button onclick="resetHumanRotation()">Reset Patient Rotation</button>
+        </div>
+
+        <div class="sidebar-title">Scan & Beam</div>
+        <div class="button-group">
+            <button id="halfScanBtn" onclick="startScan(halfScanTargetZ, 1500)">Half Scan (to Iso)</button>
+            <button id="fullScanBtn" onclick="startScan(fullScanTargetZ, 3000)">Full Scan (In)</button>
+        </div>
+        <div class="button-group">
+            <button id="stopScanBtn" onclick="stopScan()" disabled>Stop Scan/Rotation</button>
+        </div>
+        <div id="scanStatusDisplay" class="scan-status">Status: Idle</div>
+        <div class="checkbox-group">
+            <input type="checkbox" id="beamVisibilityCheckbox" onchange="toggleBeamVisibility()" checked>
+            <label for="beamVisibilityCheckbox">Show Treatment Beam</label>
+        </div>
+        <div id="collisionStatusDisplay" class="scan-status">Laser-Tumor: Clear</div>
+        <div class="button-group">
+            <button id="rotateGantryBtn" onclick="toggleGantryRotation()">Rotate Gantry</button>
+        </div>
+
+        <div class="sidebar-title">Respiratory Motion</div>
+        <div class="checkbox-group">
+            <input type="checkbox" id="motionEnableCheckbox" onchange="toggleMotion()">
+            <label for="motionEnableCheckbox">Enable Motion</label>
+        </div>
+        <div class="slider-group">
+            <label for="motionAmplitudeSlider">Amplitude:</label>
+            <input type="range" id="motionAmplitudeSlider" min="0" max="1.5" value="0.5" step="0.1" oninput="updateMotionParams()">
+            <span id="motionAmplitudeValue">0.5</span> units
+        </div>
+        <div class="slider-group">
+            <label for="motionSpeedSlider">Speed:</label>
+            <input type="range" id="motionSpeedSlider" min="0.5" max="3.0" value="1.0" step="0.1" oninput="updateMotionParams()">
+            <span id="motionSpeedValue">1.0</span> x
+        </div>
+
+        <div class="sidebar-title">Isocenter</div>
+        <div class="button-group">
+            <button id="setIsocenterBtn" onclick="setCurrentPosAsIsocenter()" style="background-color: #ffc107; color: black; width: 100%; padding: 6px 0;">Set Current Pos as Isocenter</button>
+        </div>
+
+        <div class="sidebar-title">Tutorials</div>
+        <div class="button-group">
+            <button onclick="document.getElementById('tutorialMenu').style.display='block'" style="width: 100%;">
+                Open Tutorial Menu
+            </button>
+        </div>
+
+        <!-- Added Begin button for the LAP-laser exercise -->
+        <div class="button-group">
+            <button onclick="startBeginExercise()" style="width: 100%; background-color:#28a745; color:white; padding:6px 0;">Begin (Align Tumor)</button>
+        </div>
+
+        <!-- New exercises -->
+        <div class="button-group">
+            <button onclick="startPosteriorExercise()" style="width: 100%; background-color:#007bff; color:white; padding:6px 0;">Begin (Posterior)</button>
+        </div>
+        <div class="button-group">
+            <button onclick="startFeetExercise()" style="width: 100%; background-color:#6f42c1; color:white; padding:6px 0;">Begin (Feet‑first)</button>
+        </div>
+
+        <!-- Couch move exercise -->
+        <div class="button-group">
+            <button onclick="startCouchMoveExercise()" style="width: 100%; background-color:#17a2b8; color:white; padding:6px 0;">Begin (Move Couch In)</button>
+        </div>
+    </div>
+
+    <canvas id="c"></canvas>
+
+    <div class="mri-panel">
+        <div class="sidebar-title">MR Slice Preview</div>
+        <div class="mri-status" id="mriStatus">Loading…</div>
+
+        <label for="mriCaseSelect" style="font-size:0.85em;">Case</label>
+        <select id="mriCaseSelect"></select>
+
+        <label for="mriSeriesSelect" style="font-size:0.85em;">Sequence</label>
+        <select id="mriSeriesSelect"></select>
+
+        <div class="mri-plane-group" id="mriViewGroup">
+            <button data-view="single" class="active">Single Plane</button>
+            <button data-view="triple">All 3 Planes</button>
+        </div>
+
+        <div class="mri-plane-group" id="mriPlaneGroup">
+            <button data-plane="axial" class="active">Axial</button>
+            <button data-plane="sagittal">Sagittal</button>
+            <button data-plane="coronal">Coronal</button>
+        </div>
+
+        <!-- Single-plane view -->
+        <div id="mriSingleWrap">
+            <div class="mri-canvas-wrap">
+                <canvas id="mriCanvas" width="256" height="256"></canvas>
+            </div>
+            <div class="mri-slice-readout" id="mriSliceReadout">Slice — / —</div>
+            <div class="slider-group">
+                <label for="mriSliceSlider">Slice</label>
+                <input type="range" id="mriSliceSlider" min="0" max="1" value="0" step="1">
+            </div>
+        </div>
+
+        <!-- Triple-plane (linked MPR) view -->
+        <div id="mriTripleWrap" style="display:none;">
+            <div class="mri-canvas-wrap" style="min-height:120px;">
+                <canvas id="mriCanvasAxial" width="180" height="180"></canvas>
+            </div>
+            <div class="mri-slice-readout" id="mriReadoutAxial">Axial — / —</div>
+            <input type="range" id="mriSliderAxial" min="0" max="1" value="0" step="1" style="width:100%; margin-bottom:8px;">
+
+            <div class="mri-canvas-wrap" style="min-height:120px;">
+                <canvas id="mriCanvasSagittal" width="180" height="180"></canvas>
+            </div>
+            <div class="mri-slice-readout" id="mriReadoutSagittal">Sagittal — / —</div>
+            <input type="range" id="mriSliderSagittal" min="0" max="1" value="0" step="1" style="width:100%; margin-bottom:8px;">
+
+            <div class="mri-canvas-wrap" style="min-height:120px;">
+                <canvas id="mriCanvasCoronal" width="180" height="180"></canvas>
+            </div>
+            <div class="mri-slice-readout" id="mriReadoutCoronal">Coronal — / —</div>
+            <input type="range" id="mriSliderCoronal" min="0" max="1" value="0" step="1" style="width:100%; margin-bottom:8px;">
+
+            <p style="font-size:0.75em; color:#888;">
+                All three panes share one 3D cursor — moving any slider moves
+                the cursor along that axis and updates the other two panes'
+                crosshair position accordingly.
+            </p>
+        </div>
+
+        <div class="checkbox-group">
+            <input type="checkbox" id="mriAutoFollowCheckbox" checked>
+            <label for="mriAutoFollowCheckbox">Follow couch position during scan</label>
+        </div>
+
+        <div class="sidebar-title">Scan Range</div>
+        <p style="font-size:0.75em; color:#888; margin-top:-4px;">
+            Move the couch to the desired start/end anatomy, then mark each
+            border — the standard technologist workflow for defining a scan range.
+        </p>
+        <div class="button-group">
+            <button id="mriSetSuperiorBtn" style="width:100%; background-color:#e8f4fd;">Mark Superior Border</button>
+        </div>
+        <div class="button-group">
+            <button id="mriSetInferiorBtn" style="width:100%; background-color:#e8f4fd;">Mark Inferior Border</button>
+        </div>
+        <div class="mri-status" id="mriRangeStatus">No borders marked yet.</div>
+        <div class="button-group">
+            <button id="mriScanRangeBtn" style="width:100%; background-color:#28a745; color:#fff;" disabled>Scan to Inferior Border</button>
+        </div>
+        <div class="button-group">
+            <button id="mriClearRangeBtn" style="width:100%;">Clear Borders</button>
+        </div>
+
+        <p style="font-size:0.75em; color:#888; margin-top:12px;">
+            Educational simulation — not for clinical use. MR volumes are
+            de-identified prototype teaching datasets.
+        </p>
+    </div>
+
+    <div id="tutorialMenu" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+        background:rgba(0,0,0,0.5); z-index:9999; overflow:auto;">
+        <div class="tutorial-menu">
+            <h2>Tutorial Menu</h2>
+            <ul class="tutorial-list">
+                <li><a class="tutorial-btn" href="#" onclick="startTutorial('ctcomponents'); return false;">CT Machine Components</a></li>
+                <li><a class="tutorial-btn" href="#" onclick="startTutorial('couch'); return false;">Couch Movement</a></li>
+                <li><a class="tutorial-btn" href="#" onclick="startTutorial('isocenter'); return false;">Isocenter Localization</a></li>
+                <li><a class="tutorial-btn" href="#" onclick="startTutorial('skinmarking'); return false;">Skin Marking Demo</a></li>
+                <li><a class="tutorial-btn" href="#" onclick="startTutorial('dose'); return false;">Dose Calculation Demo</a></li>
+            </ul>
+            <p style="text-align:center; margin-top:30px;">
+                <button onclick="document.getElementById('tutorialMenu').style.display='none'">✖ Close</button>
+            </p>
+        </div>
+    </div>
+
+    <!-- Begin exercise modal (hidden by default) -->
+    <div id="beginModal" class="begin-modal-overlay" style="display:none;">
+        <div class="begin-modal">
+            <h3>Exercise: Align Tumor with LAP Laser</h3>
+            <p id="beginModalMessage">Move the body so the tumor is colliding with the LAP lasers.</p>
+            <p id="beginModalStatus" class="status">Status: Waiting...</p>
+            <div>
+                <button onclick="cancelBeginExercise()">Cancel</button>
+                <button id="beginModalOk" class="primary" onclick="endBeginExercise()" disabled>OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Posterior exercise modal -->
+    <div id="posteriorModal" class="begin-modal-overlay" style="display:none;">
+        <div class="begin-modal">
+            <h3>Exercise: Put Patient in Posterior Position</h3>
+            <p id="posteriorModalMessage">Rotate the patient to the Posterior position (use Anterior/Posterior button).</p>
+            <p id="posteriorModalStatus" class="status">Status: Waiting...</p>
+            <div>
+                <button onclick="cancelPosteriorExercise()">Cancel</button>
+                <button id="posteriorModalOk" class="primary" onclick="endPosteriorExercise()" disabled>OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Feet-first exercise modal -->
+    <div id="feetModal" class="begin-modal-overlay" style="display:none;">
+        <div class="begin-modal">
+            <h3>Exercise: Put Patient in Feet‑first (Interior) Position</h3>
+            <p id="feetModalMessage">Switch the patient to Feet‑first / Interior position (use Interior/Superior button).</p>
+            <p id="feetModalStatus" class="status">Status: Waiting...</p>
+            <div>
+                <button onclick="cancelFeetExercise()">Cancel</button>
+                <button id="feetModalOk" class="primary" onclick="endFeetExercise()" disabled>OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Couch move exercise modal -->
+    <div id="couchModal" class="begin-modal-overlay" style="display:none;">
+        <div class="begin-modal">
+            <h3>Exercise: Move Couch In (Longitudinal)</h3>
+            <p id="couchModalMessage">Move the couch inward (toward the gantry) using Couch Long. (Z) controls.</p>
+            <p id="couchModalStatus" class="status">Status: Waiting...</p>
+            <div>
+                <button onclick="cancelCouchExercise()">Cancel</button>
+                <button id="couchModalOk" class="primary" onclick="endCouchExercise()" disabled>OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- X-ray quiz modal (initially hidden) -->
+    <div id="xrayQuizModal" class="quiz-modal" style="display:none;">
+        <h3>X‑ray Knowledge Quiz</h3>
+        <p id="xrayQuizStatus" class="status">Press Start to begin.</p>
+        <div id="xrayQuestionArea" style="text-align:left; margin-top:12px; display:none;">
+            <div id="xrayQuestionText" style="font-weight:600; margin-bottom:10px;"></div>
+            <div id="xrayChoices" style="display:flex; flex-direction:column; gap:6px;"></div>
+            <div style="margin-top:10px; display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                    <button id="xrayPrevBtn">Previous</button>
+                    <button id="xrayNextBtn">Next</button>
+                </div>
+                <div>
+                    <button id="xraySubmitBtn">Submit Quiz</button>
+                    <button id="xrayCloseBtn">Close</button>
+                </div>
+            </div>
+            <div id="xrayFeedback" style="margin-top:10px; font-style:italic;"></div>
+        </div>
+        <div id="xrayStartArea" style="margin-top:12px; text-align:center;">
+            <button id="xrayStartBtn" class="primary">Start Quiz</button>
+            <button id="xrayCloseStartBtn">Close</button>
+        </div>
+    </div>
+
+    <script type="importmap">
+        {
+          "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.163.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.163.0/examples/jsm/"
+          }
+        }
+    </script>
+
+    <script type="module">
+        function getQSParam(name) {
+            let params = new URLSearchParams(window.location.search);
+            return params.get(name);
+        }
+
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+        let scene, camera, renderer, controls, clock;
+        let labelRenderer;
+        let lapLaserGroup, fixedGantryLaserGroup, laserGroup;
+        let couchGroup, patientMesh, tumorMesh;
+        let patientPivot = null; // NEW: pivot used to rotate patient about its center
+        let gantryGroup, tubeMesh, detectorMesh, gantryRingMesh;
+        let treatmentBeamHelper;
+
+        const LASER_TUMOR_MARGIN = 0.25;
+
+        let upperArmL = null;
+        let upperArmR = null;
+
+        let _humanRotateAnimId = null;
+        let _humanRotateAnimating = false;
+
+        let patientOriginalLocalMatrix = null;
+        let feetFirstActive = false;
+
+        // New: separate inner + outer models and inner pivot
+        let gantryInnerModel = null;
+        let gantryOuterModel = null;
+        let gantryInnerPivot = null; // pivot at gantry origin used to rotate only inner
+
+        let userDefinedIsocenterPos = new THREE.Vector3(0, 5, 0);
+        let gantryRotationAngle = 0;
+        const gantryRotationSpeed = 0.03;
+        let patientBaseY = 0;
+
+        const laserMoveStep = 0.5;
+        const couchMoveStep = 0.5;
+        const longitudinalLimitIn = -15;
+        const longitudinalLimitOut = 15;
+
+        let couchAnimationRequestId = null;
+        let gantryAnimationRequestId = null;
+        let isScanning = false;
+        let isGantryRotating = false;
+
+        let motionEnabled = false;
+        let motionAmplitude = 0.5;
+        let motionSpeedFactor = 1.0;
+
+        const halfScanTargetZ = 0;
+        const fullScanTargetZ = longitudinalLimitIn;
+        window.halfScanTargetZ = halfScanTargetZ;
+        window.fullScanTargetZ = fullScanTargetZ;
+
+        let laserPositionDisplay, couchPositionDisplay, scanStatusDisplay;
+        let moveCouchButtons = [];
+        let scanButtons = [];
+        let stopScanBtn, rotateGantryBtn, beamVisibilityCheckbox;
+        let motionEnableCheckbox, motionAmplitudeSlider, motionSpeedSlider;
+        let motionAmplitudeValueSpan, motionSpeedValueSpan;
+        let showAnatomicalLabelsCheckbox;
+
+        const GANTRY_RADIUS = 8;
+        const GANTRY_THICKNESS = 1.5;
+        const TUBE_SIZE = 0.8;
+        const DETECTOR_WIDTH = 1.5;
+        const DETECTOR_HEIGHT = 0.5;
+        const DETECTOR_DEPTH = 2.5;
+        const BEAM_LENGTH = GANTRY_RADIUS * 1.5;
+        const BEAM_FIELD_SIZE = 3;
+        const TUMOR_RADIUS = 0.1;
+        const PATIENT_CYLINDER_RADIUS = 1.2;
+        const PATIENT_CYLINDER_HEIGHT = 12;
+        // Real, visible couch-top dimensions (previously a zero-size, fully
+        // transparent placeholder mesh — nothing was actually rendered here).
+        // Sized relative to PATIENT_CYLINDER_RADIUS/HEIGHT, the one dimension
+        // reference already trusted elsewhere in this file, rather than the
+        // GLB's raw bind-pose bounding box (which includes an outstretched
+        // T-pose arm span and is not representative of the posed body width).
+        const COUCH_TOP_WIDTH = PATIENT_CYLINDER_RADIUS * 4.5;   // comfortably wider than the body
+        const COUCH_TOP_THICKNESS = 0.8;
+        const COUCH_TOP_LENGTH = PATIENT_CYLINDER_HEIGHT * 3.3;  // generous margin past head/feet, and long enough to stay under the patient in both the GLB-loaded (z=30) and cylinder-fallback (z=0) placements
+        const COUCH_TOP_CENTER_Z = 15; // midpoint between the two possible patient placements above
+
+        let anatomicalLabelsCache = [];
+
+        // Begin-exercise state
+        let beginExerciseActive = false;
+        let beginExerciseCheckerId = null;
+
+        // Posterior exercise state
+        let posteriorExerciseActive = false;
+        let posteriorCheckerId = null;
+
+        // Feet-first exercise state
+        let feetExerciseActive = false;
+        let feetCheckerId = null;
+
+        // Couch move exercise state
+        let couchExerciseActive = false;
+        let couchCheckerId = null;
+        let couchExerciseStartZ = null;
+
+        // X-ray Quiz: append button + modal + logic (paste inside the module script, after existing exercise functions)
+
+        (function registerXrayQuiz() {
+            // Question bank (extracted from Chapter 6 RTF)
+            const xrayQuestions = [
+                {
+                    q: "Therapeutically, x-rays in the 40 to 300 kVp range are used for which of the following?",
+                    choices: [
+                        "Treatment of skin cancers and other superficial tumors",
+                        "The planning of a patient's treatment on the simulator",
+                        "Both of the above",
+                        "None of the above"
+                    ],
+                    answer: 2,
+                    explanation: "These x-rays are used for both superficial treatments and simulator planning."
+                },
+                {
+                    q: "Components of a modern diagnostic x-ray tube include which of the following?",
+                    choices: ["Cathode filament", "Rotating anode", "Glass envelope", "All of the above"],
+                    answer: 3,
+                    explanation: "A typical x-ray tube includes cathode filament, rotating anode, glass envelope, protective housing and focusing cup."
+                },
+                {
+                    q: "Interactions at the anode that produce x-rays may be described as which of the following?",
+                    choices: ["Bremsstrahlung radiation", "Characteristic radiation", "Compton scattering", "Both a and b"],
+                    answer: 3,
+                    explanation: "X-ray production at the anode is by Bremsstrahlung and characteristic radiation."
+                },
+                {
+                    q: "Beam quality is affected by changes in which of the following?",
+                    choices: ["kVp", "Potential difference in the x-ray tube", "Voltage", "All of the above"],
+                    answer: 3,
+                    explanation: "Beam quality refers to photon energy; kVp / tube potential (voltage) changes energy."
+                },
+                {
+                    q: "The quantity of photons in an x-ray beam is directly proportional to _________.",
+                    choices: ["kVp", "Anode temperature rating", "Tube current", "Filtration"],
+                    answer: 2,
+                    explanation: "Tube current (mA) controls photon quantity (proportional via mAs)."
+                },
+                {
+                    q: "Attenuation is the process by which an x-ray beam _________.",
+                    choices: ["is focused", "is reduced in intensity", "diverges", "exposes a film"],
+                    answer: 1,
+                    explanation: "Attenuation reduces beam intensity (loss of photons via scatter/absorption)."
+                },
+                {
+                    q: "Which of the following describes the predominant x-ray interaction in the diagnostic range?",
+                    choices: ["Compton scatter", "Photoelectric absorption", "Coherent scatter", "None of the above"],
+                    answer: 0,
+                    explanation: "Compton scatter predominates in diagnostic energy ranges."
+                },
+                {
+                    q: "Additive pathologies affect tissue density such that the affected anatomy may appear _________ on the radiograph.",
+                    choices: ["lighter than normal", "darker than normal", "unchanged", "hypoechoic"],
+                    answer: 0,
+                    explanation: "Additive pathologies increase density and produce lighter (underexposed) regions on film."
+                },
+                {
+                    q: "Destructive pathologies include which of the following?",
+                    choices: ["Pleural effusion", "Atelectasis", "Edema", "Necrosis"],
+                    answer: 3,
+                    explanation: "Destructive pathologies decrease tissue density; necrosis is destructive."
+                },
+                {
+                    q: "Which technical factor has the most effect on radiographic density?",
+                    choices: ["mAs", "kVp", "Distance", "All of the above"],
+                    answer: 3,
+                    explanation: "mAs typically modulates density but kVp and distance also strongly affect density."
+                },
+                {
+                    q: "A quality radiograph taken at 100 cm using 20 mAs could be replicated at 50 cm using which mAs?",
+                    choices: ["15 mAs", "10 mAs", "7 mAs", "5 mAs"],
+                    answer: 3,
+                    explanation: "Inverse square law: halving distance reduces required exposure by 4x: 20 / 4 = 5 mAs."
+                },
+                {
+                    q: "Unlike digital radiography, conventional analog imaging media includes which of the following?",
+                    choices: ["Film", "Screens", "Cassettes", "All of the above"],
+                    answer: 3,
+                    explanation: "Analog imaging uses film, intensifying screens and cassettes."
+                },
+                {
+                    q: "Which of the following is responsible for transforming invisible x-rays into visible light?",
+                    choices: ["Grids", "Glass envelope", "Densitometer", "Intensifying screens"],
+                    answer: 3,
+                    explanation: "Intensifying screens produce visible light via phosphorescence, lowering exposure."
+                },
+                {
+                    q: "Which of the following is an advantage of the photo-stimulatable phosphor plate over conventional x-ray image production?",
+                    choices: ["Less radiating per exposure", "Post-processing manipulation of density and contrast", "No need for radiographic grids", "Higher spatial resolution"],
+                    answer: 1,
+                    explanation: "PSP plates allow post-processing manipulation of image density/contrast after capture."
+                },
+                {
+                    q: "Which imaging receptor does not use light in capturing the latent image?",
+                    choices: ["Flat panel detectors (FPDs)", "TFTs", "Film and screen"],
+                    answer: 0,
+                    explanation: "FPDs convert x-rays directly to electrical signals (direct detectors) without visible light."
+                },
+                {
+                    q: "Which of the following may be used to reduce scatter reaching the image receptor?",
+                    choices: ["Collimation", "Grids", "Filtration", "Both a and b"],
+                    answer: 3,
+                    explanation: "Collimation and grids are principal scatter-reduction methods."
+                },
+                {
+                    q: "Image fusion for PET images may fuse PET with images of _________.",
+                    choices: ["Ultrasound", "X-ray", "CT", "All of the above"],
+                    answer: 2,
+                    explanation: "PET commonly fuses with CT (or MRI) to provide anatomical context."
+                },
+                {
+                    q: "Three-dimensional imaging using voxels is present in ____________.",
+                    choices: ["MRI", "CT", "Both of the above", "Neither"],
+                    answer: 2,
+                    explanation: "Both MRI and CT use voxels (volume elements) for 3D imaging."
+                },
+                {
+                    q: "In which imaging procedure does an x-ray tube rotate rapidly around the patient?",
+                    choices: ["CT", "MRI", "Fluoroscopy", "Mammography"],
+                    answer: 0,
+                    explanation: "CT scanners rotate an x-ray tube and detectors around the patient to acquire projections."
+                },
+                {
+                    q: "Which modality does not use radiation in image production?",
+                    choices: ["CT", "Nuclear medicine", "MRI", "Mammography"],
+                    answer: 2,
+                    explanation: "MRI uses magnetic fields and RF; it does not use ionizing radiation."
+                },
+                {
+                    q: "Because of prostate mobility, which modality may be used at time of treatment to identify prostate position?",
+                    choices: ["Fluoroscopy", "Ultrasound", "MRI", "Nuclear medicine"],
+                    answer: 1,
+                    explanation: "Ultrasound provides real-time localization for mobile organs like the prostate."
+                },
+                {
+                    q: "The discovery of x-rays in 1895 is credited to _____.",
+                    choices: ["Wilhelm Conrad Roentgen", "Theodor Boveri", "Marie Curie", "Sir Godfrey Hounsfield"],
+                    answer: 0,
+                    explanation: "Roentgen discovered x-rays in 1895."
+                },
+                {
+                    q: "The emission of liberated electrons is the primary purpose of the ________.",
+                    choices: ["Anode", "Cathode", "Target", "Generator"],
+                    answer: 1,
+                    explanation: "The cathode (tungsten filament) liberates electrons for x-ray production."
+                }
+            ];
+
+            // Create modal DOM once
+            function createQuizModal() {
+                if (document.getElementById('xrayQuizModal')) return;
+
+                const modalOverlay = document.createElement('div');
+                modalOverlay.id = 'xrayQuizModal';
+                modalOverlay.className = 'begin-modal-overlay';
+                modalOverlay.style.display = 'none';
+                modalOverlay.innerHTML = `
+                    <div class="begin-modal" style="max-width:680px;">
+                        <h3>X‑ray Knowledge Quiz</h3>
+                        <p id="xrayQuizStatus" class="status">Press Start to begin.</p>
+                        <div id="xrayQuestionArea" style="text-align:left; margin-top:12px; display:none;">
+                            <div id="xrayQuestionText" style="font-weight:600; margin-bottom:10px;"></div>
+                            <div id="xrayChoices" style="display:flex; flex-direction:column; gap:6px;"></div>
+                            <div style="margin-top:10px; display:flex; justify-content:space-between; align-items:center;">
+                                <div>
+                                    <button id="xrayPrevBtn">Previous</button>
+                                    <button id="xrayNextBtn">Next</button>
+                                </div>
+                                <div>
+                                    <button id="xraySubmitBtn">Submit Quiz</button>
+                                    <button id="xrayCloseBtn">Close</button>
+                                </div>
+                            </div>
+                            <div id="xrayFeedback" style="margin-top:10px; font-style:italic;"></div>
+                        </div>
+                        <div id="xrayStartArea" style="margin-top:12px; text-align:center;">
+                            <button id="xrayStartBtn" class="primary">Start Quiz</button>
+                            <button id="xrayCloseStartBtn">Close</button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modalOverlay);
+
+                // Hook events
+                const startBtn = document.getElementById('xrayStartBtn');
+                const closeStartBtn = document.getElementById('xrayCloseStartBtn');
+                const prevBtn = document.getElementById('xrayPrevBtn');
+                const nextBtn = document.getElementById('xrayNextBtn');
+                const submitBtn = document.getElementById('xraySubmitBtn');
+                const closeBtn = document.getElementById('xrayCloseBtn');
+
+                startBtn.addEventListener('click', () => { Quiz.start(); });
+                closeStartBtn.addEventListener('click', () => { Quiz.close(); });
+                prevBtn.addEventListener('click', () => { Quiz.prev(); });
+                nextBtn.addEventListener('click', () => { Quiz.next(); });
+                submitBtn.addEventListener('click', () => { Quiz.submit(); });
+                closeBtn.addEventListener('click', () => { Quiz.close(); });
+            }
+
+            // Simple Quiz controller
+            const Quiz = (function () {
+                let idx = 0;
+                let answers = [];
+                let modal, statusEl, questionArea, qText, qChoices, feedbackEl, startArea;
+
+                function openModal() {
+                    modal = document.getElementById('xrayQuizModal');
+                    statusEl = document.getElementById('xrayQuizStatus');
+                    questionArea = document.getElementById('xrayQuestionArea');
+                    qText = document.getElementById('xrayQuestionText');
+                    qChoices = document.getElementById('xrayChoices');
+                    feedbackEl = document.getElementById('xrayFeedback');
+                    startArea = document.getElementById('xrayStartArea');
+                    modal.style.display = 'flex';
+                    statusEl.textContent = `Questions: ${xrayQuestions.length}. Ready to start.`;
+                    questionArea.style.display = 'none';
+                    startArea.style.display = '';
+                }
+
+                function close() {
+                    const modal = document.getElementById('xrayQuizModal');
+                    if (modal) modal.style.display = 'none';
+                }
+
+                function start() {
+                    answers = new Array(xrayQuestions.length).fill(null);
+                    idx = 0;
+                    startArea.style.display = 'none';
+                    questionArea.style.display = '';
+                    renderQuestion();
+                    statusEl.textContent = `Question 1 of ${xrayQuestions.length}`;
+                    feedbackEl.textContent = '';
+                }
+
+                function renderQuestion() {
+                    const q = xrayQuestions[idx];
+                    qText.textContent = `${idx + 1}. ${q.q}`;
+                    qChoices.innerHTML = '';
+                    q.choices.forEach((choice, i) => {
+                        const id = `xray_choice_${idx}_${i}`;
+                        const label = document.createElement('label');
+                        label.style.cursor = 'pointer';
+                        label.style.padding = '6px';
+                        label.style.border = '1px solid #ddd';
+                        label.style.borderRadius = '6px';
+                        label.style.display = 'block';
+                        label.htmlFor = id;
+                        const radio = document.createElement('input');
+                        radio.type = 'radio';
+                        radio.name = `xray_q_${idx}`;
+                        radio.id = id;
+                        radio.value = i;
+                        radio.style.marginRight = '8px';
+                        if (answers[idx] === i) radio.checked = true;
+                        radio.addEventListener('change', () => {
+                            answers[idx] = i;
+                            feedbackEl.textContent = '';
+                        });
+                        label.appendChild(radio);
+                        const span = document.createElement('span');
+                        span.textContent = choice;
+                        label.appendChild(span);
+                        qChoices.appendChild(label);
+                    });
+
+                    // update status text
+                    statusEl.textContent = `Question ${idx + 1} of ${xrayQuestions.length}`;
+                    // show per-question feedback if answered
+                    if (answers[idx] !== null) {
+                        const correct = xrayQuestions[idx].answer;
+                        if (answers[idx] === correct) {
+                            feedbackEl.textContent = 'Selected answer is correct.';
+                            feedbackEl.style.color = 'green';
+                        } else {
+                            feedbackEl.textContent = `Selected answer is incorrect. Correct: "${xrayQuestions[idx].choices[correct]}".`;
+                            feedbackEl.style.color = 'crimson';
+                        }
+                    } else {
+                        feedbackEl.textContent = '';
+                    }
+                }
+
+                function next() {
+                    if (idx < xrayQuestions.length - 1) {
+                        idx++;
+                        renderQuestion();
+                    }
+                }
+                function prev() {
+                    if (idx > 0) {
+                        idx--;
+                        renderQuestion();
+                    }
+                }
+
+                function submit() {
+                    // Score
+                    let score = 0;
+                    const unanswered = [];
+                    xrayQuestions.forEach((q, i) => {
+                        if (answers[i] === null) unanswered.push(i + 1);
+                        else if (answers[i] === q.answer) score++;
+                    });
+
+                    if (unanswered.length > 0) {
+                        if (!confirm(`You have unanswered questions (${unanswered.join(', ')}). Submit anyway?`)) return;
+                    }
+
+                    const pct = Math.round((score / xrayQuestions.length) * 100);
+                    const modalStatus = document.getElementById('xrayQuizStatus');
+                    modalStatus.textContent = `Score: ${score}/${xrayQuestions.length} (${pct}%)`;
+
+                    // Show detailed feedback list
+                    const details = document.createElement('div');
+                    details.style.maxHeight = '260px';
+                    details.style.overflow = 'auto';
+                    details.style.marginTop = '10px';
+                    xrayQuestions.forEach((q, i) => {
+                        const line = document.createElement('div');
+                        line.style.padding = '6px';
+                        line.style.borderBottom = '1px solid #eee';
+                        const correctIdx = q.answer;
+                        const chosen = answers[i] === null ? '(no answer)' : q.choices[answers[i]];
+                        line.innerHTML = `<strong>Q${i + 1}.</strong> ${q.q}<br/><em>Your:</em> ${chosen} <br/><em>Correct:</em> ${q.choices[correctIdx]}<br/><small>${q.explanation || ''}</small>`;
+                        details.appendChild(line);
+                    });
+
+                    // Replace question area with details and a close button
+                    const questionAreaEl = document.getElementById('xrayQuestionArea');
+                    questionAreaEl.innerHTML = '';
+                    const doneDiv = document.createElement('div');
+                    doneDiv.style.textAlign = 'center';
+                    doneDiv.innerHTML = `<h4>Quiz Complete</h4><p>Score: ${score}/${xrayQuestions.length} (${pct}%)</p>`;
+                    questionAreaEl.appendChild(doneDiv);
+                    questionAreaEl.appendChild(details);
+                    const closeBtn = document.createElement('button');
+                    closeBtn.textContent = 'Close';
+                    closeBtn.style.marginTop = '12px';
+                    closeBtn.addEventListener('click', () => { Quiz.close(); location.reload(); });
+                    questionAreaEl.appendChild(closeBtn);
+                }
+
+                return { openModal, close, start, next, prev, submit, renderQuestion };
+            })();
+
+            // Add button to sidebar and create modal on init
+            function addSidebarButton() {
+                const sidebar = document.querySelector('.controls-sidebar');
+                if (!sidebar) return;
+                const container = document.createElement('div');
+                container.className = 'button-group';
+                const btn = document.createElement('button');
+                btn.textContent = 'X‑ray Quiz';
+                btn.style.backgroundColor = '#343aeb';
+                btn.style.color = 'white';
+                btn.onclick = function () {
+                    createQuizModal();
+                    Quiz.openModal();
+                };
+                container.appendChild(btn);
+                // Append near top (after Camera / View)
+                sidebar.appendChild(container);
+            }
+
+            // Run after DOM ready
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', addSidebarButton);
+            } else {
+                addSidebarButton();
+            }
+
+        })();
+
+        function init() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xcccccc);
+            camera = new THREE.PerspectiveCamera(75, (window.innerWidth - 220) / window.innerHeight, 0.1, 1000);
+            clock = new THREE.Clock();
+
+            const canvas = document.querySelector('#c');
+            renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+            renderer.setSize(window.innerWidth - 220, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+            labelRenderer = new CSS2DRenderer();
+            labelRenderer.setSize(window.innerWidth - 220, window.innerHeight);
+            labelRenderer.domElement.style.position = 'absolute';
+            labelRenderer.domElement.style.left = '220px';
+            labelRenderer.domElement.style.top = '0px';
+            labelRenderer.domElement.style.pointerEvents = 'none';
+            document.body.appendChild(labelRenderer.domElement);
+
+            resetCamera();
+
+            scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+            const dirLight1 = new THREE.DirectionalLight(0xffffff, 0.7); dirLight1.position.set(10, 20, 15); dirLight1.castShadow = true; scene.add(dirLight1);
+            const dirLight2 = new THREE.DirectionalLight(0xffffff, 0.5); dirLight2.position.set(-10, 15, -10); scene.add(dirLight2);
+
+            controls = new OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+
+            createAlignmentLasers();
+            createCouchAndPatient();
+            createGantry(); // now loads Gantry_Inner + Gantry_Outer into gantryGroup
+            createTreatmentBeam();
+            createLAPLases();
+            createFixedGantryLasers();
+            createRoom();
+
+            // LAP lasers: set initial position halfway between gantry and patient couch
+            const lapOriginZ = (longitudinalLimitOut + 0) / 2;
+            const lapLaserInitialPos = new THREE.Vector3(0, userDefinedIsocenterPos.y, lapOriginZ + 5);
+            lapLaserGroup.position.copy(lapLaserInitialPos);
+            userDefinedIsocenterPos.copy(lapLaserInitialPos);
+
+            couchGroup.position.set(0, userDefinedIsocenterPos.y, longitudinalLimitOut);
+            gantryGroup.position.copy(new THREE.Vector3(0, userDefinedIsocenterPos.y, 0));
+            controls.target.copy(lapLaserGroup.position);
+
+            setLaserLayering();
+
+            laserPositionDisplay = document.getElementById('laserPositionDisplay');
+            couchPositionDisplay = document.getElementById('couchPositionDisplay');
+            scanStatusDisplay = document.getElementById('scanStatusDisplay');
+            stopScanBtn = document.getElementById('stopScanBtn');
+            rotateGantryBtn = document.getElementById('rotateGantryBtn');
+            beamVisibilityCheckbox = document.getElementById('beamVisibilityCheckbox');
+            motionEnableCheckbox = document.getElementById('motionEnableCheckbox');
+            motionAmplitudeSlider = document.getElementById('motionAmplitudeSlider');
+            motionSpeedSlider = document.getElementById('motionSpeedSlider');
+            motionAmplitudeValueSpan = document.getElementById('motionAmplitudeValue');
+            motionSpeedValueSpan = document.getElementById('motionSpeedValue');
+            showAnatomicalLabelsCheckbox = document.getElementById('showAnatomicalLabelsCheckbox');
+            scanButtons = [
+                document.getElementById('halfScanBtn'),
+                document.getElementById('fullScanBtn'),
+                document.getElementById('setIsocenterBtn')
+            ];
+            moveCouchButtons = [
+                document.getElementById('moveCouchXLeft'),
+                document.getElementById('moveCouchXRight'),
+                document.getElementById('moveCouchYUp'),
+                document.getElementById('moveCouchYDown'),
+                document.getElementById('moveCouchZIn'),
+                document.getElementById('moveCouchZOut')
+            ].filter(btn => btn !== null);
+
+            updateLaserPositionDisplay();
+            updateCouchPositionDisplay();
+            updateScanStatus("Idle");
+            setMovementAndScanButtonsEnabled(true);
+            treatmentBeamHelper.visible = beamVisibilityCheckbox.checked;
+            updateMotionParams();
+            motionEnabled = motionEnableCheckbox.checked;
+            toggleAnatomicalLabelsVisibility();
+
+            // Laser visibility controls
+            const lapLasersCheckbox = document.getElementById('lapLasersCheckbox');
+            const fixedGantryLasersCheckbox = document.getElementById('fixedGantryLasersCheckbox');
+            if (lapLasersCheckbox) lapLasersCheckbox.addEventListener('change', toggleLAPLasesVisibility);
+            if (fixedGantryLasersCheckbox) fixedGantryLasersCheckbox.addEventListener('change', toggleFixedGantryLasersVisibility);
+            // Ensure visibility matches initial state
+            toggleLAPLasesVisibility();
+            toggleFixedGantryLasersVisibility();
+
+            window.addEventListener('resize', onWindowResize, false);
+            animate();
+            console.log("4D CT Sim Init complete with separate Gantry_Inner / Gantry_Outer loader");
+        }
+
+        function createAlignmentLasers() {
+            laserGroup = new THREE.Group();
+        }
+
+        function createLAPLases() {
+            lapLaserGroup = new THREE.Group();
+            const lapLaserLength = 12;
+            const lapLaserMaterial = new THREE.LineBasicMaterial({ color: 0x00ff00, linewidth: 2, transparent: true, opacity: 0.7 });
+            lapLaserGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-lapLaserLength / 2, 0, 0), new THREE.Vector3(lapLaserLength / 2, 0, 0)]), lapLaserMaterial));
+            /*lapLaserGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0, -lapLaserLength / 12), new THREE.Vector3(0, 0, lapLaserLength / 2)]), lapLaserMaterial));*/
+            lapLaserGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, -lapLaserLength / 2, 0), new THREE.Vector3(0, lapLaserLength / 2, 0)]), lapLaserMaterial));
+            scene.add(lapLaserGroup);
+        }
+
+        function createFixedGantryLasers() {
+            fixedGantryLaserGroup = new THREE.Group();
+            fixedGantryLaserGroup.position.set(0, 0, 0);
+            const fixedLaserLength = 14;
+            const fixedLaserMaterial = new THREE.LineBasicMaterial({ color: 0x3399ff, linewidth: 2, transparent: true, opacity: 0.7 });
+            //fixedGantryLaserGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-fixedLaserLength / 2, 0, 0), new THREE.Vector3(fixedLaserLength / 2, 0, 0)]), fixedLaserMaterial));
+            //fixedGantryLaserGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0, -fixedLaserLength / 2), new THREE.Vector3(0, 0, fixedLaserLength / 2)]), fixedLaserMaterial));
+            //fixedGantryLaserGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, -fixedLaserLength / 2, 0), new THREE.Vector3(0, fixedLaserLength / 2, 0)]), fixedLaserMaterial));
+            // attach to gantryGroup (outer/inner visuals will be children of gantryGroup)
+            if (gantryGroup) gantryGroup.add(fixedGantryLaserGroup);
+        }
+
+        function setLaserLayering() {
+            if (lapLaserGroup) lapLaserGroup.children.forEach(line => line.renderOrder = 2);
+            if (fixedGantryLaserGroup) fixedGantryLaserGroup.children.forEach(line => line.renderOrder = 3);
+            if (gantryGroup) gantryGroup.renderOrder = 0;
+            if (couchGroup) couchGroup.renderOrder = 0;
+        }
+
+        function toggleLAPLasesVisibility() {
+            const lapLasersCheckbox = document.getElementById('lapLasersCheckbox');
+            if (lapLaserGroup && lapLasersCheckbox) lapLaserGroup.visible = lapLasersCheckbox.checked;
+        }
+        function toggleFixedGantryLasersVisibility() {
+            const fixedGantryLasersCheckbox = document.getElementById('fixedGantryLasersCheckbox');
+            if (fixedGantryLaserGroup && fixedGantryLasersCheckbox) fixedGantryLaserGroup.visible = fixedGantryLasersCheckbox.checked;
+        }
+
+        function createAnatomicalLabel(text, x, y, z) {
+            const div = document.createElement('div');
+            div.className = 'anatomical-label';
+            div.textContent = text;
+            const label = new CSS2DObject(div);
+            label.position.set(x, y, z);
+            anatomicalLabelsCache.push(label);
+            return label;
+        }
+
+        window.toggleAnatomicalLabelsVisibility = function () {
+            if (!showAnatomicalLabelsCheckbox || !anatomicalLabelsCache) return;
+            const isVisible = showAnatomicalLabelsCheckbox.checked;
+            anatomicalLabelsCache.forEach(label => {
+                if (label && label.element) {
+                    label.element.style.display = isVisible ? '' : 'none';
+                    label.visible = isVisible;
+                }
+            });
+        }
+
+        function createCouchAndPatient() {
+            couchGroup = new THREE.Group();
+            const couchTopGeo = new THREE.BoxGeometry(COUCH_TOP_WIDTH, COUCH_TOP_THICKNESS, COUCH_TOP_LENGTH);
+            const couchTopMat = new THREE.MeshStandardMaterial({ color: 0xd8dade, roughness: 0.75, metalness: 0.05 });
+            const couchTop = new THREE.Mesh(couchTopGeo, couchTopMat);
+            couchTop.castShadow = true;
+            couchTop.receiveShadow = true;
+            // Default position — repositioned in Y once the actual patient
+            // path (GLB success vs. cylinder fallback) resolves patientBaseY below.
+            couchTop.position.set(0, patientBaseY - COUCH_TOP_THICKNESS / 2, COUCH_TOP_CENTER_Z);
+            couchGroup.add(couchTop);
+
+            // attempt to load patient GLB (unchanged behavior)
+            const loader = new GLTFLoader();
+            const humanPath = 'CT_Assets/Human_Body_Transparent.glb';
+
+            loader.load(humanPath, (gltf) => {
+                const model = gltf.scene || gltf.scenes[0];
+                model.traverse((node) => { if (node.isMesh) { node.castShadow = node.receiveShadow = true; } });
+                const humanBbox = new THREE.Box3().setFromObject(model);
+                const size = humanBbox.getSize(new THREE.Vector3());
+                let scaleFactor = 10;
+                model.scale.setScalar(scaleFactor);
+                humanBbox.setFromObject(model);
+                const newSize = humanBbox.getSize(new THREE.Vector3());
+                patientBaseY = -2
+                model.rotation.x = Math.PI / -2;
+                humanBbox.setFromObject(model);
+                const offsetY = patientBaseY - humanBbox.min.y;
+                model.position.set(0, offsetY, 30);
+                couchTop.position.y = patientBaseY - COUCH_TOP_THICKNESS / 2;
+                couchGroup.add(model);
+                patientMesh = model;
+                patientMesh.updateMatrix();
+                patientMesh.updateMatrixWorld(true);
+                patientOriginalLocalMatrix = patientMesh.matrix.clone();
+                feetFirstActive = false;
+                patientPivot = humanBbox.getCenter(new THREE.Vector3()).add(new THREE.Vector3(0, offsetY, 0));
+                console.log("PatientPivot = ", patientPivot);
+
+                // enable rotate button once patient model is present
+                const rotateHumanBtn = document.getElementById('rotateHumanBtn');
+                if (rotateHumanBtn) rotateHumanBtn.disabled = false;
+                const feetFirstBtn = document.getElementById('feetFirstBtn');
+                if (feetFirstBtn) feetFirstBtn.disabled = false;
+
+                upperArmL = model.getObjectByName('upper_armL') || model.getObjectByName('upper_arm_l') || model.getObjectByName('UpperArm.L');
+                upperArmR = model.getObjectByName('upper_armR') || model.getObjectByName('upper_arm_r') || model.getObjectByName('UpperArm.R');
+
+                upperArmL.rotation.x = Math.PI / -2;
+                upperArmL.rotation.y = Math.PI / -4;
+                upperArmR.rotation.x = Math.PI / -2;
+                upperArmR.rotation.y = Math.PI / 4;
+
+                //// --- list all bones / bone-like nodes to console for debugging ---
+                //const boneNodes = [];
+                //model.traverse((n) => {
+                //    if (n.isBone || n.type === 'Bone') boneNodes.push(n);
+                //});
+
+                //if (boneNodes.length > 0) {
+                //    console.groupCollapsed(`Model Bones (${boneNodes.length})`);
+                //    boneNodes.forEach(b => console.log(b.name || b.uuid, b));
+                //    console.groupEnd();
+                //    // expose for console access
+                //    window.modelBones = boneNodes;
+                //} else {
+                //    // fallback: find nodes whose names look like bones
+                //    const candidates = [];
+                //    model.traverse((n) => {
+                //        if (n.name && /upper_arm\.l|upper_arm\.r|arm|humerus|radius|ulna|clavicle|scapula|bone|spine|femur|tibia|fibula|shoulder|hand|foot/i.test(n.name)) {
+                //            candidates.push(n);
+                //        }
+                //    });
+                //    console.groupCollapsed(`Bone-like nodes (${candidates.length})`);
+                //    candidates.forEach(n => console.log(n.name || n.uuid, n));
+                //    console.groupEnd();
+                //    window.modelBones = candidates;
+                //}
+
+                const tumorGeo = new THREE.SphereGeometry(TUMOR_RADIUS, 16, 16);
+                const tumorMat = new THREE.MeshStandardMaterial({ color: 0xff4136, emissive: 0x440000 });
+                tumorMesh = new THREE.Mesh(tumorGeo, tumorMat);
+
+                // Tumor position options (one is the original). User can fine-tune these later.
+                const tumorOptions = [
+                    new THREE.Vector3(0.1, 3, 0.2),   // original
+                    new THREE.Vector3(0, 2.3, 0.2),// alternative 1
+                    new THREE.Vector3(0, 4.3, 0.2) // alternative 2
+                ];
+                const choiceIndex = Math.floor(Math.random() * tumorOptions.length);
+                const chosenPos = tumorOptions[choiceIndex];
+                tumorMesh.position.copy(chosenPos);
+                tumorMesh.castShadow = true;
+                model.add(tumorMesh);
+
+                console.log(`Tumor position chosen [index=${choiceIndex}]:`, chosenPos);
+
+                const labelDepthOffset = newSize.z / 2 + 0.7;
+                const labelWidthOffset = newSize.x / 2 + 0.5;
+                const labelPatientYPos = patientBaseY;
+                const labelPatientAntYPos = patientBaseY + newSize.y / 2 + 0.4;
+                const labelPatientPostYPos = (0.5 / 2) + 0.15;
+
+                //couchGroup.add(createAnatomicalLabel("Head", 0, labelPatientYPos, -labelDepthOffset));
+                //couchGroup.add(createAnatomicalLabel("Feet", 0, labelPatientYPos, labelDepthOffset));
+                //couchGroup.add(createAnatomicalLabel("Anterior", 0, labelPatientAntYPos, 0));
+                //couchGroup.add(createAnatomicalLabel("Posterior", 0, labelPatientPostYPos, 0));
+                //couchGroup.add(createAnatomicalLabel("Left", labelWidthOffset, labelPatientYPos, 0));
+                //couchGroup.add(createAnatomicalLabel("Right", -labelWidthOffset, labelPatientYPos, 0));
+            }, undefined, (err) => {
+                console.error("Failed to load GLB patient, falling back to cylinder:", err);
+                const patientGeo = new THREE.CylinderGeometry(PATIENT_CYLINDER_RADIUS, PATIENT_CYLINDER_RADIUS, PATIENT_CYLINDER_HEIGHT, 20);
+                const patientMat = new THREE.MeshStandardMaterial({ color: 0xb0c4de, transparent: true, opacity: 0.6 });
+                const fallbackPatient = new THREE.Mesh(patientGeo, patientMat);
+                fallbackPatient.rotation.x = Math.PI / 2;
+                patientBaseY = (0.5 / 2) + PATIENT_CYLINDER_RADIUS;
+                fallbackPatient.position.y = patientBaseY;
+                couchTop.position.y = patientBaseY - COUCH_TOP_THICKNESS / 2;
+                fallbackPatient.castShadow = true;
+                fallbackPatient.receiveShadow = true;
+                couchGroup.add(fallbackPatient);
+                patientMesh = fallbackPatient;
+                patientMesh.updateMatrix();
+                patientMesh.updateMatrixWorld(true);
+                patientOriginalLocalMatrix = patientMesh.matrix.clone();
+                feetFirstActive = false;
+
+                // Tumor -- use three choices here too (one matches the original fallback)
+                const tumorGeo = new THREE.SphereGeometry(TUMOR_RADIUS, 16, 16);
+                const tumorMat = new THREE.MeshStandardMaterial({ color: 0xff4136, emissive: 0x440000 });
+                tumorMesh = new THREE.Mesh(tumorGeo, tumorMat);
+
+                const tumorOptionsFallback = [
+                    new THREE.Vector3(0, 0, 0),          // original fallback center
+                    new THREE.Vector3(0.4, 0.2, -0.6),   // alternative 1
+                    new THREE.Vector3(-0.5, 0.3, 0.9)    // alternative 2
+                ];
+                const choiceIndexFallback = Math.floor(Math.random() * tumorOptionsFallback.length);
+                const chosenPosFallback = tumorOptionsFallback[choiceIndexFallback];
+                tumorMesh.position.copy(chosenPosFallback);
+                patientMesh.add(tumorMesh);
+
+                console.log(`Tumor position chosen (fallback) [index=${choiceIndexFallback}]:`, chosenPosFallback);
+
+                const feetFirstBtn = document.getElementById('feetFirstBtn');
+                const rotateHumanBtn = document.getElementById('rotateHumanBtn');
+                if (rotateHumanBtn) rotateHumanBtn.disabled = false;
+                if (feetFirstBtn) feetFirstBtn.disabled = false;
+
+                //const labelPatientYPos = patientBaseY;
+                //const labelPatientAntYPos = patientBaseY + PATIENT_CYLINDER_RADIUS + 0.4;
+                //const labelPatientPostYPos = (0.5 / 2) + 0.15;
+                //const labelDepthOffset = PATIENT_CYLINDER_HEIGHT / 2 + 0.7;
+                //const labelWidthOffset = PATIENT_CYLINDER_RADIUS + 0.5;
+
+                //couchGroup.add(createAnatomicalLabel("Head", 0, labelPatientYPos, -labelDepthOffset));
+                //couchGroup.add(createAnatomicalLabel("Feet", 0, labelPatientYPos, labelDepthOffset));
+                //couchGroup.add(createAnatomicalLabel("Anterior", 0, labelPatientAntYPos, 0));
+                //couchGroup.add(createAnatomicalLabel("Posterior", 0, labelPatientPostYPos, 0));
+                //couchGroup.add(createAnatomicalLabel("Left", labelWidthOffset, labelPatientYPos, 0));
+                //couchGroup.add(createAnatomicalLabel("Right", -labelWidthOffset, labelPatientYPos, 0));
+            });
+
+            scene.add(couchGroup);
+        }
+
+        // createGantry now loads Gantry_Outer + Gantry_Inner separately.
+        function createGantry() {
+            gantryGroup = new THREE.Group();
+            scene.add(gantryGroup);
+
+            const loader = new GLTFLoader();
+
+            // Helper to scale/center a loaded model and attach to gantryGroup.
+            function processAndAttachModel(model, options = {}) {
+                model.traverse(n => { if (n.isMesh) { n.castShadow = n.receiveShadow = true; } });
+                const bbox = new THREE.Box3().setFromObject(model);
+                const size = bbox.getSize(new THREE.Vector3());
+                const desiredDiameter = GANTRY_RADIUS * 6;
+
+                // Allow an explicit scale override via options.scale.
+                // If not provided, compute a uniformScale based on model size (existing behaviour).
+                let uniformScale;
+                if (typeof options.scale === 'number') {
+                    uniformScale = options.scale;
+                } else {
+                    uniformScale = 1;
+                    if (size.x > 0) uniformScale = desiredDiameter / size.x;
+                    if (uniformScale <= 0) uniformScale = 0.01;
+                    // keep a reasonable clamp for automatically computed scales
+                    uniformScale = Math.min(Math.max(uniformScale, 0.0005), 10);
+                }
+
+                model.scale.setScalar(uniformScale);
+
+                bbox.setFromObject(model);
+                const center = bbox.getCenter(new THREE.Vector3());
+                model.position.sub(center);
+                // small orientation adjustment to match previous behavior
+                model.rotateY(Math.PI / -2);
+
+                // optional offset
+                if (options.offsetX) model.position.x += options.offsetX;
+                gantryGroup.add(model);
+
+                // return useful metadata
+                return { model, bbox, size, uniformScale };
+            }
+
+            // Load outer shell (visual ring / housing)
+            loader.load('CT_Assets/Gantry_Outer.glb', (gltf) => {
+                try {
+                    const model = gltf.scene || gltf.scenes[0];
+                    const meta = processAndAttachModel(model, { offsetX: 39, scale: 10 });
+                    gantryOuterModel = model;
+                    console.log('Gantry Outer loaded, scale:', meta.uniformScale);
+                    // ensure fixedGantry lasers are parented to gantryGroup (already added earlier)
+                } catch (e) {
+                    console.warn('Error processing Gantry_Outer', e);
+                }
+            }, undefined, (err) => {
+                console.warn('Failed to load Gantry_Outer.glb', err);
+            });
+
+            // Load inner tube (this is the rotating piece — we'll put it under an inner pivot so only it spins)
+            loader.load('CT_Assets/Gantry_Inner.glb', (gltf) => {
+                try {
+                    const model = gltf.scene || gltf.scenes[0];
+
+                    // heuristics to find the actual tube mesh (if any)
+                    let foundTube = null;
+                    model.traverse((n) => {
+                        if (!n.isMesh) return;
+                        const name = (n.name || '').toLowerCase();
+                        if (!foundTube && (name.includes('cyl') || name.includes('tube') || name.includes('xray') || name.includes('gantry') || name.includes('td'))) {
+                            foundTube = n;
+                        }
+                    });
+
+                    // scale + center and add temporarily to gantryGroup so world matrices are valid
+                    const meta = processAndAttachModel(model, { offsetX: 0 });
+
+                    // At this point `model` is a child of `gantryGroup` so world matrices are valid.
+                    // Compute tube world position (fallback to model origin if we couldn't detect the tube)
+                    const tubeWorldPos = new THREE.Vector3();
+                    if (foundTube) {
+                        foundTube.getWorldPosition(tubeWorldPos);
+                    } else {
+                        // fallback: use model's world position (center)
+                        model.getWorldPosition(tubeWorldPos);
+                    }
+
+                    // Create a pivot located at the tube center expressed in gantryGroup local space.
+                    // We'll add the pivot to gantryGroup and then attach the inner model to the pivot
+                    // using Object3D.attach to preserve the model's world transform.
+                    const pivot = new THREE.Object3D();
+                    const pivotLocal = gantryGroup.worldToLocal(tubeWorldPos.clone());
+                    pivot.position.copy(pivotLocal);
+                    gantryGroup.add(pivot);
+
+                    // Attach the model under the pivot while preserving its world transform.
+                    // attach() moves the object into the new parent and updates its local transform so
+                    // it keeps the same world transform — exactly what we need.
+                    pivot.attach(model);
+
+                    // Save references
+                    gantryInnerPivot = pivot;
+                    gantryInnerModel = model;
+
+                    if (foundTube) {
+                        tubeMesh = foundTube;
+                        console.log('Gantry Inner: tube mesh assigned by heuristic:', foundTube.name || foundTube.id);
+                    } else {
+                        const maybe = model.getObjectByName('Cylinder') || model.getObjectByName('Cylinder__0') || model.getObjectByName('cylinder');
+                        if (maybe) {
+                            tubeMesh = maybe;
+                            console.log('Gantry Inner: tube assigned by explicit name:', maybe.name);
+                        }
+                    }
+
+                    // Reparent treatment beam to the inner model so it rotates with the tube
+                    if (treatmentBeamHelper) {
+                        if (treatmentBeamHelper.parent) treatmentBeamHelper.parent.remove(treatmentBeamHelper);
+                        gantryInnerModel.add(treatmentBeamHelper);
+                    }
+
+                    // adjust camera / controls target as before
+                    const bbox = new THREE.Box3().setFromObject(gantryGroup);
+                    const bsize = bbox.getSize(new THREE.Vector3());
+                    const maxDim = Math.max(bsize.x, bsize.y, bsize.z);
+                    camera.position.set(userDefinedIsocenterPos.x + Math.max(25, maxDim * 1.5), userDefinedIsocenterPos.y + Math.max(20, maxDim * 0.6), userDefinedIsocenterPos.z + Math.max(30, maxDim * 1.0));
+                    controls.target.copy(userDefinedIsocenterPos);
+
+                    console.log('Gantry Inner loaded, attached to pivot at tube center. scale:', meta.uniformScale);
+                } catch (e) {
+                    console.warn('Error processing Gantry_Inner', e);
+                }
+            }, undefined, (err) => {
+                console.warn('Failed to load Gantry_Inner.glb', err);
+            });
+
+            // If both fail, the rest of the system continues to work with procedural fallback (unchanged)
+        }
+
+        function createRoom() {
+            try {
+                const loader = new GLTFLoader();
+                const roomPath = 'CT_Assets/Room.glb';
+                const DEBUG_ROOM_HELPERS = false; // set false to hide helpers after verifying placement
+
+                loader.load(roomPath, (gltf) => {
+                    const model = gltf.scene || gltf.scenes[0];
+                    if (!model) {
+                        console.warn('Room.glb loaded but contains no scene root.');
+                        return;
+                    }
+
+                    // Ensure meshes cast/receive shadows and try to enforce backface culling.
+                    model.traverse((node) => {
+                        if (!node.isMesh) return;
+
+                        // Ensure shadows
+                        node.castShadow = true;
+                        node.receiveShadow = true;
+
+                        // If the material is an array or single material, force FrontSide culling
+                        const materials = Array.isArray(node.material) ? node.material : [node.material];
+                        materials.forEach((m) => {
+                            if (!m) return;
+                            // If material was intentionally double-sided in authoring we still switch to FrontSide
+                            // so backface culling will hide back faces as you expect.
+                            if (m.side === THREE.DoubleSide || m.side === THREE.BackSide) {
+                                console.log(`Room: forcing FrontSide on material (${m.name || m.id}) for mesh`, node.name || node.uuid);
+                                m.side = THREE.FrontSide;
+                                m.needsUpdate = true;
+                            }
+                        });
+
+                        // Recompute vertex normals in case normals were flipped or invalid
+                        const geom = node.geometry;
+                        if (geom && geom.isBufferGeometry) {
+                            try {
+                                geom.computeVertexNormals();
+                            } catch (e) {
+                                console.warn('Failed to compute normals for', node.name || node.uuid, e);
+                            }
+                        }
+                    });
+
+                    // Compute bounding box and scale/center the model so it fits the scene
+                    const bbox = new THREE.Box3().setFromObject(model);
+                    const size = bbox.getSize(new THREE.Vector3());
+                    const maxDim = Math.max(size.x, size.y, size.z);
+
+                    // Tweak target size to taste; keep relative to GANTRY_RADIUS so it fits your scene.
+                    const targetMax = Math.max(80, GANTRY_RADIUS * 35);
+                    let scaleFactor = 1;
+                    if (maxDim > 0) scaleFactor = targetMax / maxDim;
+                    // clamp scale to avoid degenerate values
+                    scaleFactor = Math.min(Math.max(scaleFactor, 0.0001), 10);
+
+                    model.scale.setScalar(scaleFactor);
+
+                    // Recompute bbox after scaling and center the model on origin
+                    bbox.setFromObject(model);
+                    const center = bbox.getCenter(new THREE.Vector3());
+                    model.position.sub(center); // move center to origin
+
+                    // Place room around the scene isocenter height so it's visible (small lift)
+                    // Adjust the added offset if the room sits too high/low
+                    const yOffset = userDefinedIsocenterPos.y + 18;
+                    model.position.y += yOffset;
+                    const zOffset = userDefinedIsocenterPos.z + 20;
+                    model.position.z += zOffset;
+
+                    // Force a matrix update so helpers / bbox are correct
+                    model.updateMatrixWorld(true);
+
+                    // Add model to scene
+                    scene.add(model);
+                    console.log('Room model added to scene. scale:', scaleFactor, 'bbox:', bbox.min, bbox.max, 'yOffset:', yOffset);
+
+                    // Diagnostic helpers — toggle with DEBUG_ROOM_HELPERS
+                    if (DEBUG_ROOM_HELPERS) {
+                        try {
+                            const boxHelper = new THREE.BoxHelper(model, 0xff0000);
+                            boxHelper.material.linewidth = 2;
+                            scene.add(boxHelper);
+
+                            const axes = new THREE.AxesHelper(Math.max(size.x, size.y, size.z) * 0.5 || 10);
+                            // Place axes at model world center
+                            const worldCenter = new THREE.Vector3();
+                            model.getWorldPosition(worldCenter);
+                            axes.position.copy(worldCenter);
+                            scene.add(axes);
+
+                            // Also log camera position so you can compare
+                            console.log('Camera position after room load:', camera && camera.position ? camera.position.clone() : null);
+                        } catch (e) {
+                            console.warn('Failed to add debug helpers for Room model', e);
+                        }
+                    }
+
+                }, undefined, (err) => {
+                    console.warn('Failed to load Room.glb', err);
+                });
+            } catch (e) {
+                console.warn('Error loading room model', e);
+            }
+        }
+
+        function createTreatmentBeam() {
+            const coneHeight = GANTRY_RADIUS / 4;
+            const radiusAtIso = BEAM_FIELD_SIZE / 2;
+            const coneBaseRadius = (radiusAtIso / GANTRY_RADIUS) * coneHeight;
+            const beamGeo = new THREE.ConeGeometry(coneBaseRadius, coneHeight, 32, 1, true);
+            beamGeo.rotateX(Math.PI);
+            beamGeo.translate(0, -3, 0);
+            const beamMat = new THREE.MeshBasicMaterial({
+                color: 0x00ff00, transparent: true, opacity: 0.25,
+                depthWrite: false, side: THREE.DoubleSide
+            });
+            treatmentBeamHelper = new THREE.Mesh(beamGeo, beamMat);
+            treatmentBeamHelper.visible = false;
+
+            // add initially to gantryGroup; when inner loads the code reparents beamHelper to inner model
+            if (gantryGroup) gantryGroup.add(treatmentBeamHelper);
+        }
+
+        // moveLasers, setCurrentPosAsIsocenter, moveCouch, scanning and animation functions remain unchanged
+        window.moveLasers = function (dx, dy, dz) {
+            if (!lapLaserGroup || isScanning || isGantryRotating) return;
+            const moveVector = new THREE.Vector3(dx * laserMoveStep, dy * laserMoveStep, dz * laserMoveStep);
+            lapLaserGroup.position.add(moveVector);
+            userDefinedIsocenterPos.copy(lapLaserGroup.position);
+            updateLaserPositionDisplay();
+            controls.target.copy(lapLaserGroup.position);
+        }
+
+        window.setCurrentPosAsIsocenter = function () {
+            if (!lapLaserGroup || isScanning || isGantryRotating) return;
+            userDefinedIsocenterPos.copy(lapLaserGroup.position);
+            updateLaserPositionDisplay();
+            controls.target.copy(userDefinedIsocenterPos);
+            console.log("Isocenter set to world:", userDefinedIsocenterPos);
+        }
+
+        window.moveCouch = function (dx, dy, dz) {
+            if (isScanning || isGantryRotating) { stopAllAnimations(); console.log("Scan/Rotation stopped by manual couch movement."); }
+            if (!couchGroup) return;
+            const newPos = couchGroup.position.clone();
+            newPos.x += dx * couchMoveStep;
+            newPos.y += dy * couchMoveStep;
+            newPos.z += dz * couchMoveStep;
+            newPos.z = Math.max(longitudinalLimitIn + userDefinedIsocenterPos.z, Math.min(longitudinalLimitOut + userDefinedIsocenterPos.z, newPos.z));
+            couchGroup.position.copy(newPos);
+            updateCouchPositionDisplay();
+        }
+
+        function setMovementAndScanButtonsEnabled(enabled) {
+            moveCouchButtons.forEach(button => { if (button) button.disabled = !enabled; });
+            scanButtons.forEach(button => { if (button) button.disabled = !enabled; });
+            if (stopScanBtn) stopScanBtn.disabled = !(isScanning || isGantryRotating);
+            if (rotateGantryBtn) rotateGantryBtn.disabled = isScanning;
+        }
+
+        // Helper: determine which object should be rotated for gantry actions
+        function getGantryRotationTarget() {
+            // Rotate the inner pivot (if present) so the outer shell remains static and inner spins about gantry origin.
+            return gantryInnerPivot || gantryInnerModel || gantryGroup;
+        }
+
+        function animateScanMovement(targetZrelativeToIso, duration = 1500) {
+            if (!couchGroup || !gantryGroup || isScanning || isGantryRotating) return;
+            stopAllAnimations();
+            const targetWorldZ = userDefinedIsocenterPos.z + targetZrelativeToIso;
+            const startZ = couchGroup.position.z;
+            const distanceZ = targetWorldZ - startZ;
+            if (Math.abs(distanceZ) < 0.01) return;
+
+            isScanning = true; isGantryRotating = true;
+            setMovementAndScanButtonsEnabled(false);
+            updateScanStatus("Scanning...");
+            if (treatmentBeamHelper) treatmentBeamHelper.visible = true;
+
+            const startTime = performance.now();
+            function stepCouch() {
+                if (!isScanning) { couchAnimationRequestId = null; return; }
+                const currentTime = performance.now(); const elapsedTime = currentTime - startTime;
+                const progress = Math.min(elapsedTime / duration, 1);
+                couchGroup.position.z = Math.max(longitudinalLimitIn + userDefinedIsocenterPos.z, Math.min(longitudinalLimitOut + userDefinedIsocenterPos.z, startZ + distanceZ * progress));
+                updateCouchPositionDisplay();
+                if (progress < 1) { couchAnimationRequestId = requestAnimationFrame(stepCouch); }
+                else { couchAnimationRequestId = null; if (!gantryAnimationRequestId && isScanning) { stopAllAnimations(true); } }
+            }
+            function stepGantry() {
+                if (!isGantryRotating) { gantryAnimationRequestId = null; return; }
+                gantryRotationAngle += gantryRotationSpeed;
+                if (gantryRotationAngle > Math.PI * 2) gantryRotationAngle -= Math.PI * 2;
+                const rotTarget = getGantryRotationTarget();
+                rotTarget.rotation.z = gantryRotationAngle;
+                if (isScanning || isGantryRotating) { gantryAnimationRequestId = requestAnimationFrame(stepGantry); }
+                else { gantryAnimationRequestId = null; }
+            }
+            couchAnimationRequestId = requestAnimationFrame(stepCouch);
+            gantryAnimationRequestId = requestAnimationFrame(stepGantry);
+        }
+
+        window.startScan = function (targetZrelativeToIso, duration) { animateScanMovement(targetZrelativeToIso, duration); }
+
+        window.toggleGantryRotation = function () {
+            if (isScanning) return;
+            if (isGantryRotating) { stopAllAnimations(); }
+            else {
+                isGantryRotating = true;
+                setMovementAndScanButtonsEnabled(false);
+                updateScanStatus("Rotating Gantry...");
+                if (beamVisibilityCheckbox.checked && treatmentBeamHelper) { treatmentBeamHelper.visible = true; }
+                function stepGantry() {
+                    if (!isGantryRotating) { gantryAnimationRequestId = null; return; }
+                    gantryRotationAngle += gantryRotationSpeed;
+                    if (gantryRotationAngle > Math.PI * 2) gantryRotationAngle -= Math.PI * 2;
+                    const rotTarget = getGantryRotationTarget();
+                    rotTarget.rotation.z = gantryRotationAngle;
+                    gantryAnimationRequestId = requestAnimationFrame(stepGantry);
+                }
+                gantryAnimationRequestId = requestAnimationFrame(stepGantry);
+                rotateGantryBtn.textContent = "Stop Rotation";
+            }
+        }
+
+        window.rotateHuman180 = function () {
+            if (!patientMesh) { console.warn('rotateHuman180: patientMesh not loaded'); return; }
+            if (_humanRotateAnimating) return;
+            _humanRotateAnimating = true;
+
+            const duration = 400; // ms
+            const startY = patientMesh.rotation.y;
+            const endY = startY + Math.PI; // 180 degrees
+            const startTime = performance.now();
+
+            function easeInOut(t) {
+                // smoothstep style easing
+                return 0.5 - 0.5 * Math.cos(Math.PI * Math.min(Math.max(t, 0), 1));
+            }
+
+            function step(now) {
+                const t = (now - startTime) / duration;
+                const eased = easeInOut(t);
+                patientMesh.rotation.y = startY + (endY - startY) * eased;
+                if (t < 1) {
+                    _humanRotateAnimId = requestAnimationFrame(step);
+                } else {
+                    _humanRotateAnimId = null;
+                    _humanRotateAnimating = false;
+                }
+            }
+
+            _humanRotateAnimId = requestAnimationFrame(step);
+        };
+
+        // Fixed: rotate feet-first around the patient's actual world center while preserving position
+        window.setFeetFirst = function () {
+            if (!patientMesh || !couchGroup) { console.warn('setFeetFirst: patientMesh or couchGroup not ready'); return; }
+
+            // Cancel any in-flight human rotation animation.
+            if (_humanRotateAnimId) { cancelAnimationFrame(_humanRotateAnimId); _humanRotateAnimId = null; _humanRotateAnimating = false; }
+
+            // Ensure matrices are current
+            scene.updateMatrixWorld(true);
+            couchGroup.updateMatrixWorld(true);
+            patientMesh.updateMatrixWorld(true);
+
+            // If already feet-first, restore original transform
+            if (feetFirstActive) {
+                if (patientOriginalLocalMatrix) {
+                    const pos = new THREE.Vector3();
+                    const quat = new THREE.Quaternion();
+                    const scale = new THREE.Vector3();
+                    patientOriginalLocalMatrix.decompose(pos, quat, scale);
+                    patientMesh.position.copy(pos);
+                    patientMesh.quaternion.copy(quat);
+                    patientMesh.scale.copy(scale);
+                    patientMesh.updateMatrix();
+                    patientMesh.updateMatrixWorld(true);
+                }
+                feetFirstActive = false;
+                return;
+            }
+
+            // Ensure we have an original matrix saved (save now if not)
+            if (!patientOriginalLocalMatrix) {
+                patientMesh.updateMatrix();
+                patientOriginalLocalMatrix = patientMesh.matrix.clone();
+            }
+
+            // Compute pivot as bounding-box center in world space
+            const bbox = new THREE.Box3().setFromObject(patientMesh);
+            const pivotWorld = bbox.getCenter(new THREE.Vector3());
+
+            // Build matrix that rotates about pivot: T(pivot) * R_y(180deg) * T(-pivot)
+            const Tneg = new THREE.Matrix4().makeTranslation(-pivotWorld.x, -pivotWorld.y, -pivotWorld.z);
+            const R = new THREE.Matrix4().makeRotationY(Math.PI);
+            const Tpos = new THREE.Matrix4().makeTranslation(pivotWorld.x, pivotWorld.y, pivotWorld.z);
+            const rotAboutPivot = new THREE.Matrix4().multiplyMatrices(Tpos, new THREE.Matrix4().multiplyMatrices(R, Tneg));
+
+            // Compute new world matrix for the patient after rotation and convert into couch local space.
+            const newWorldMatrix = new THREE.Matrix4().multiplyMatrices(rotAboutPivot, patientMesh.matrixWorld);
+            const couchWorldInv = new THREE.Matrix4().copy(couchGroup.matrixWorld).invert();
+            const newLocalMatrix = new THREE.Matrix4().multiplyMatrices(couchWorldInv, newWorldMatrix);
+
+            // Decompose and apply to patientMesh (position, quaternion, scale).
+            const newPos = new THREE.Vector3();
+            const newQuat = new THREE.Quaternion();
+            const newScale = new THREE.Vector3();
+            newLocalMatrix.decompose(newPos, newQuat, newScale);
+
+            patientMesh.position.copy(newPos);
+            patientMesh.quaternion.copy(newQuat);
+            patientMesh.scale.copy(newScale);
+
+            // Force matrix updates so the scene stays consistent.
+            patientMesh.updateMatrix();
+            patientMesh.updateMatrixWorld(true);
+
+            feetFirstActive = true;
+            _humanRotateAnimating = false;
+            _humanRotateAnimId = null;
+        };
+
+        window.resetHumanRotation = function () {
+            if (!patientMesh || !couchGroup) { console.warn('resetHumanRotation: patientMesh or couchGroup not loaded'); return; }
+            if (_humanRotateAnimId) { cancelAnimationFrame(_humanRotateAnimId); _humanRotateAnimId = null; }
+            _humanRotateAnimating = false;
+
+            // Restore stored original local transform if present
+            if (patientOriginalLocalMatrix) {
+                const pos = new THREE.Vector3();
+                const quat = new THREE.Quaternion();
+                const scale = new THREE.Vector3();
+                patientOriginalLocalMatrix.decompose(pos, quat, scale);
+                patientMesh.position.copy(pos);
+                patientMesh.quaternion.copy(quat);
+                patientMesh.scale.copy(scale);
+                patientMesh.updateMatrix();
+                patientMesh.updateMatrixWorld(true);
+            } else {
+                // Fallback: zero rotations if we don't have stored original
+                patientMesh.rotation.y = 0;
+                patientMesh.rotation.z = 0;
+                patientMesh.updateMatrix();
+                patientMesh.updateMatrixWorld(true);
+            }
+
+            feetFirstActive = false;
+        };
+
+        window.stopAllAnimations = function (scanFinishedNaturally = false) {
+            const wasScanning = isScanning; const wasRotating = isGantryRotating;
+            isScanning = false; isGantryRotating = false;
+            if (treatmentBeamHelper) treatmentBeamHelper.visible = beamVisibilityCheckbox.checked;
+            if (couchAnimationRequestId) { cancelAnimationFrame(couchAnimationRequestId); couchAnimationRequestId = null; }
+            if (gantryAnimationRequestId) { cancelAnimationFrame(gantryAnimationRequestId); gantryAnimationRequestId = null; }
+            setMovementAndScanButtonsEnabled(true);
+            rotateGantryBtn.textContent = "Rotate Gantry";
+
+            // If the scan completed naturally, restore patient to original position/rotation.
+            if (scanFinishedNaturally) {
+                try {
+                    resetHumanRotation();
+                } catch (e) {
+                    console.warn('Failed to reset patient after scan', e);
+                }
+            }
+
+            if (!scanFinishedNaturally && (wasScanning || wasRotating)) { updateScanStatus("Stopped"); }
+            else if (scanFinishedNaturally) { updateScanStatus("Scan Complete"); }
+            else { updateScanStatus("Idle"); }
+        }
+        window.stopScan = window.stopAllAnimations;
+
+        window.toggleMotion = function () {
+            motionEnabled = motionEnableCheckbox.checked;
+            if (!motionEnabled && patientMesh) {
+                patientMesh.position.y = patientBaseY;
+            }
+        }
+        window.updateMotionParams = function () {
+            motionAmplitude = parseFloat(motionAmplitudeSlider.value);
+            motionSpeedFactor = parseFloat(motionSpeedSlider.value);
+            if (motionAmplitudeValueSpan) motionAmplitudeValueSpan.textContent = motionAmplitude.toFixed(1);
+            if (motionSpeedValueSpan) motionSpeedValueSpan.textContent = motionSpeedFactor.toFixed(1);
+        }
+
+        function updateLaserPositionDisplay() {
+            if (lapLaserGroup && laserPositionDisplay)
+                laserPositionDisplay.textContent = `X:${lapLaserGroup.position.x.toFixed(1)}, Y:${lapLaserGroup.position.y.toFixed(1)}, Z:${lapLaserGroup.position.z.toFixed(1)}`;
+        }
+        function updateCouchPositionDisplay() {
+            if (couchGroup && couchPositionDisplay)
+                couchPositionDisplay.textContent = `X:${couchGroup.position.x.toFixed(1)}, Y:${couchGroup.position.y.toFixed(1)}, Z:${couchGroup.position.z.toFixed(1)}`;
+        }
+        function updateScanStatus(statusText) {
+            if (scanStatusDisplay) scanStatusDisplay.textContent = `Status: ${statusText}`;
+        }
+
+        window.resetCamera = function () {
+            camera.position.set(userDefinedIsocenterPos.x + 25, userDefinedIsocenterPos.y + 20, userDefinedIsocenterPos.z + 30);
+            if (controls) controls.target.copy(userDefinedIsocenterPos);
+        }
+        window.viewAxial = function () {
+            camera.position.set(userDefinedIsocenterPos.x, userDefinedIsocenterPos.y + 45, userDefinedIsocenterPos.z);
+            if (controls) controls.target.copy(userDefinedIsocenterPos);
+        }
+        window.viewSagittal = function () {
+            camera.position.set(userDefinedIsocenterPos.x + 45, userDefinedIsocenterPos.y, userDefinedIsocenterPos.z);
+            if (controls) controls.target.copy(userDefinedIsocenterPos);
+        }
+
+        window.toggleBeamVisibility = function () {
+            if (treatmentBeamHelper) {
+                treatmentBeamHelper.visible = beamVisibilityCheckbox.checked;
+                if (isScanning || isGantryRotating) { treatmentBeamHelper.visible = true; }
+            }
+        }
+
+        function updateTreatmentBeamPosition() {
+            // prefer inner pivot as beam parent so local conversions are consistent
+            const beamParent = gantryInnerPivot || gantryInnerModel || gantryGroup;
+            if (beamParent && tubeMesh && treatmentBeamHelper) {
+                const tubeWorldPos = new THREE.Vector3();
+                tubeMesh.getWorldPosition(tubeWorldPos);
+                const local = beamParent.worldToLocal(tubeWorldPos.clone());
+                treatmentBeamHelper.position.copy(local);
+                treatmentBeamHelper.rotation.set(0, 0, 0);
+                treatmentBeamHelper.rotateX(Math.PI);
+            } else if (gantryGroup && !tubeMesh && treatmentBeamHelper) {
+                treatmentBeamHelper.position.copy(new THREE.Vector3(0, GANTRY_RADIUS, 0));
+                treatmentBeamHelper.rotation.set(0, 0, 0);
+                treatmentBeamHelper.rotateX(Math.PI);
+            }
+        }
+
+
+        function _distanceSqPointToSegment(point, a, b) {
+            const line = new THREE.Line3(a, b);
+            const closest = new THREE.Vector3();
+            line.closestPointToPoint(point, true, closest);
+            return closest.distanceToSquared(point);
+        }
+
+        function _setTumorEmissive(hex) {
+            if (!tumorMesh) return;
+            if (Array.isArray(tumorMesh.material)) {
+                tumorMesh.material.forEach(m => { if (m && m.emissive) m.emissive.setHex(hex); });
+            } else if (tumorMesh.material && tumorMesh.material.emissive) {
+                tumorMesh.material.emissive.setHex(hex);
+            }
+        }
+
+        function _setLaserGroupColor(group, hex) {
+            if (!group) return;
+            group.children.forEach(child => {
+                if (child && child.material) {
+                    // LineBasicMaterial may be shared; ensure we set on the instance(s)
+                    try { child.material.color.setHex(hex); child.material.needsUpdate = true; } catch (e) { /* ignore */ }
+                }
+            });
+        }
+
+        // Performs collision test between all visible laser lines and the tumor.
+        // Updates visual feedback (tumor emissive, laser colors, and collision status text).
+        function checkLaserTumorCollisions() {
+            if (!tumorMesh) return false;
+            const tumorWorld = new THREE.Vector3();
+            tumorMesh.getWorldPosition(tumorWorld);
+
+            const threshold = TUMOR_RADIUS + LASER_TUMOR_MARGIN;
+            const thresholdSq = threshold * threshold;
+
+            let collided = false;
+
+            const groups = [lapLaserGroup, fixedGantryLaserGroup];
+
+            groups.forEach(group => {
+                if (!group || !group.visible) return;
+                group.children.forEach(line => {
+                    if (!line || !line.geometry) return;
+                    const posAttr = line.geometry.attributes && line.geometry.attributes.position;
+                    if (!posAttr || posAttr.count < 2) return;
+
+                    const startLocal = new THREE.Vector3().fromBufferAttribute(posAttr, 0);
+                    const endLocal = new THREE.Vector3().fromBufferAttribute(posAttr, 1);
+
+                    // convert to world positions
+                    line.localToWorld(startLocal);
+                    line.localToWorld(endLocal);
+
+                    const d2 = _distanceSqPointToSegment(tumorWorld, startLocal, endLocal);
+                    if (d2 <= thresholdSq) collided = true;
+                });
+            });
+
+            // Visual feedback
+            if (collided) {
+                _setTumorEmissive(0xff0000); // bright red glow
+                _setLaserGroupColor(lapLaserGroup, 0xff0000);
+                _setLaserGroupColor(fixedGantryLaserGroup, 0xff0000);
+                const el = document.getElementById('collisionStatusDisplay');
+                if (el) el.textContent = 'Laser-Tumor: COLLISION';
+            } else {
+                _setTumorEmissive(0x440000); // original subtle emissive
+                _setLaserGroupColor(lapLaserGroup, 0x00ff00); // lap green
+                _setLaserGroupColor(fixedGantryLaserGroup, 0x3399ff); // fixed blue
+                const el = document.getElementById('collisionStatusDisplay');
+                if (el) el.textContent = 'Laser-Tumor: Clear';
+            }
+
+            return collided;
+        }
+
+        // Begin-exercise control functions
+
+        // Called when user presses "Begin" button
+        window.startBeginExercise = function () {
+            console.log('Begin exercise started: prompt user to align tumor with LAP lasers.');
+            if (beginExerciseActive) return; // already running
+            beginExerciseActive = true;
+
+            const modal = document.getElementById('beginModal');
+            const statusEl = document.getElementById('beginModalStatus');
+            const okBtn = document.getElementById('beginModalOk');
+            modal.style.display = 'flex';
+            okBtn.disabled = true;
+            statusEl.textContent = 'Status: Waiting for model / movement...';
+            // Start periodic check (use requestAnimationFrame loop)
+            function checkLoop() {
+                if (!beginExerciseActive) {
+                    beginExerciseCheckerId = null;
+                    return;
+                }
+
+                // If tumor or lapLaserGroup not ready, show waiting
+                if (!tumorMesh || !lapLaserGroup) {
+                    statusEl.textContent = 'Status: Waiting for patient or lasers to load...';
+                    beginExerciseCheckerId = requestAnimationFrame(checkLoop);
+                    return;
+                }
+
+                // Call collision check (this also updates the collision display)
+                const collided = checkLaserTumorCollisions();
+
+                if (collided) {
+                    statusEl.textContent = 'Status: Correct — tumor is colliding with LAP laser.';
+                    okBtn.disabled = false;
+                    console.log('Begin exercise: tumor is colliding with LAP laser. Prompting user with Correct.');
+                    try { } catch (e) { /* ignore */ }
+                    beginExerciseCheckerId = null;
+                    return;
+                } else {
+                    statusEl.textContent = 'Status: Not aligned yet — move the body so tumor intersects LAP laser.';
+                }
+
+                beginExerciseCheckerId = requestAnimationFrame(checkLoop);
+            }
+
+            beginExerciseCheckerId = requestAnimationFrame(checkLoop);
+        };
+
+        // Called when user confirms (OK) in the modal
+        window.endBeginExercise = function () {
+            const modal = document.getElementById('beginModal');
+            modal.style.display = 'none';
+            beginExerciseActive = false;
+            if (beginExerciseCheckerId) { cancelAnimationFrame(beginExerciseCheckerId); beginExerciseCheckerId = null; }
+            console.log('Begin exercise ended by user (OK). Modal closed.');
+        };
+
+        // Called when user cancels the exercise
+        window.cancelBeginExercise = function () {
+            const modal = document.getElementById('beginModal');
+            modal.style.display = 'none';
+            beginExerciseActive = false;
+            if (beginExerciseCheckerId) { cancelAnimationFrame(beginExerciseCheckerId); beginExerciseCheckerId = null; }
+            console.log('Begin exercise cancelled by user.');
+        };
+
+        // Posterior exercise functions
+        window.startPosteriorExercise = function () {
+            console.log('Posterior exercise started.');
+            if (posteriorExerciseActive) return;
+            posteriorExerciseActive = true;
+
+            const modal = document.getElementById('posteriorModal');
+            const statusEl = document.getElementById('posteriorModalStatus');
+            const okBtn = document.getElementById('posteriorModalOk');
+            modal.style.display = 'flex';
+            okBtn.disabled = true;
+            statusEl.textContent = 'Status: Waiting for model / movement...';
+
+            function isPatientPosterior() {
+                if (!patientMesh) return false;
+                // Normalize rotation to [0, 2PI)
+                const r = ((patientMesh.rotation.y % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+                // Posterior roughly corresponds to rotation.y ≈ PI
+                return Math.abs(r - Math.PI) < 0.4;
+            }
+
+            function checkLoop() {
+                if (!posteriorExerciseActive) { posteriorCheckerId = null; return; }
+
+                if (!patientMesh) {
+                    statusEl.textContent = 'Status: Waiting for patient model...';
+                    posteriorCheckerId = requestAnimationFrame(checkLoop);
+                    return;
+                }
+
+                if (isPatientPosterior()) {
+                    statusEl.textContent = 'Status: Correct — patient is Posterior.';
+                    okBtn.disabled = false;
+                    console.log('Posterior exercise: patient is posterior. Prompting user with Correct.');
+                    try { } catch (e) { /* ignore */ }
+                    posteriorCheckerId = null;
+                    return;
+                } else {
+                    statusEl.textContent = 'Status: Not Posterior yet — use Anterior/Posterior control.';
+                }
+
+                posteriorCheckerId = requestAnimationFrame(checkLoop);
+            }
+
+            posteriorCheckerId = requestAnimationFrame(checkLoop);
+        };
+
+        window.endPosteriorExercise = function () {
+            const modal = document.getElementById('posteriorModal');
+            modal.style.display = 'none';
+            posteriorExerciseActive = false;
+            if (posteriorCheckerId) { cancelAnimationFrame(posteriorCheckerId); posteriorCheckerId = null; }
+            console.log('Posterior exercise ended by user (OK). Modal closed.');
+        };
+
+        window.cancelPosteriorExercise = function () {
+            const modal = document.getElementById('posteriorModal');
+            modal.style.display = 'none';
+            posteriorExerciseActive = false;
+            if (posteriorCheckerId) { cancelAnimationFrame(posteriorCheckerId); posteriorCheckerId = null; }
+            console.log('Posterior exercise cancelled by user.');
+        };
+
+        // Feet-first exercise functions
+        window.startFeetExercise = function () {
+            console.log('Feet-first exercise started.');
+            if (feetExerciseActive) return;
+            feetExerciseActive = true;
+
+            const modal = document.getElementById('feetModal');
+            const statusEl = document.getElementById('feetModalStatus');
+            const okBtn = document.getElementById('feetModalOk');
+            modal.style.display = 'flex';
+            okBtn.disabled = true;
+            statusEl.textContent = 'Status: Waiting for model / movement...';
+
+            function checkLoop() {
+                if (!feetExerciseActive) { feetCheckerId = null; return; }
+
+                if (!patientMesh) {
+                    statusEl.textContent = 'Status: Waiting for patient model...';
+                    feetCheckerId = requestAnimationFrame(checkLoop);
+                    return;
+                }
+
+                // feetFirstActive is toggled by setFeetFirst()
+                if (feetFirstActive) {
+                    statusEl.textContent = 'Status: Correct — patient is Feet-first (Interior).';
+                    okBtn.disabled = false;
+                    console.log('Feet-first exercise: feetFirstActive is true. Prompting user with Correct.');
+                    try { } catch (e) { /* ignore */ }
+                    feetCheckerId = null;
+                    return;
+                } else {
+                    statusEl.textContent = 'Status: Not Feet-first yet — use Interior/Superior control.';
+                }
+
+                feetCheckerId = requestAnimationFrame(checkLoop);
+            }
+
+            feetCheckerId = requestAnimationFrame(checkLoop);
+        };
+
+        window.endFeetExercise = function () {
+            const modal = document.getElementById('feetModal');
+            modal.style.display = 'none';
+            feetExerciseActive = false;
+            if (feetCheckerId) { cancelAnimationFrame(feetCheckerId); feetCheckerId = null; }
+            console.log('Feet-first exercise ended by user (OK). Modal closed.');
+        };
+
+        window.cancelFeetExercise = function () {
+            const modal = document.getElementById('feetModal');
+            modal.style.display = 'none';
+            feetExerciseActive = false;
+            if (feetCheckerId) { cancelAnimationFrame(feetCheckerId); feetCheckerId = null; }
+            console.log('Feet-first exercise cancelled by user.');
+        };
+
+        // Couch-move exercise functions
+        window.startCouchMoveExercise = function () {
+            console.log('Couch move exercise started: prompt user to move couch inward (Z negative).');
+            if (couchExerciseActive) return;
+            couchExerciseActive = true;
+
+            const modal = document.getElementById('couchModal');
+            const statusEl = document.getElementById('couchModalStatus');
+            const okBtn = document.getElementById('couchModalOk');
+            modal.style.display = 'flex';
+            okBtn.disabled = true;
+            statusEl.textContent = 'Status: Waiting for couch to be available...';
+
+            // store start Z when available (world Z)
+            couchExerciseStartZ = (couchGroup && typeof couchGroup.position?.z === 'number') ? couchGroup.position.z : null;
+
+            const requiredMove = 1.0; // require ~1.0 units inward for success
+            const EPS = 1e-6;
+
+            // Fallback: accept any detected movement (small threshold) as temporary success after a short debounce
+            const FALLBACK_THRESHOLD = 0.001;
+            const FALLBACK_DEBOUNCE_MS = 300;
+            let lastSeenZ = couchExerciseStartZ;
+            let movementDetected = false;
+            let lastMovementTime = 0;
+            let fallbackApplied = false;
+
+            // Debug helper
+            function debugLog(startZ, currentZ, movedIn) {
+                console.debug('[CouchExercise] startZ=', (startZ !== null && startZ !== undefined) ? startZ.toFixed(3) : startZ,
+                              ' currentZ=', currentZ.toFixed(3), ' movedIn=', movedIn.toFixed(3));
+            }
+
+            function applyFallback() {
+                if (fallbackApplied) return;
+                fallbackApplied = true;
+                okBtn.disabled = false;
+                statusEl.textContent = 'Status: Fallback accepted — small movement detected.';
+                console.warn('Couch move exercise: fallback accepted due to any detected movement.');
+            }
+
+            function checkLoop() {
+                if (!couchExerciseActive) { couchCheckerId = null; return; }
+
+                if (!couchGroup) {
+                    statusEl.textContent = 'Status: Waiting for couch to load...';
+                    couchCheckerId = requestAnimationFrame(checkLoop);
+                    return;
+                }
+
+                // Ensure we have a baseline start Z
+                if (couchExerciseStartZ === null) {
+                    couchExerciseStartZ = couchGroup.position.z;
+                    lastSeenZ = couchExerciseStartZ;
+                    statusEl.textContent = 'Status: Baseline recorded — move the couch inward (toward the gantry)...';
+                    console.log('[CouchExercise] baseline startZ recorded:', couchExerciseStartZ);
+                }
+
+                const currentZ = couchGroup.position.z;
+                const movedIn = couchExerciseStartZ - currentZ; // positive if moved inward
+
+                // Debug log
+                debugLog(couchExerciseStartZ, currentZ, movedIn);
+
+                // Normal success condition
+                if (movedIn + EPS >= requiredMove) {
+                    statusEl.textContent = 'Status: Correct — couch moved inward.';
+                    okBtn.disabled = false;
+                    console.log('Couch move exercise: required inward movement detected.', { startZ: couchExerciseStartZ, currentZ: currentZ, movedIn });
+                    try { if (typeof window.alert === 'function'); } catch (e) { /* ignore */ }
+                    couchCheckerId = null;
+                    return;
+                }
+
+                // Detect any movement (fallback)
+                if (!movementDetected && Math.abs(currentZ - lastSeenZ) > FALLBACK_THRESHOLD) {
+                    movementDetected = true;
+                    lastMovementTime = performance.now();
+                    console.log('[CouchExercise] movement detected (fallback candidate). currentZ:', currentZ, 'delta:', (currentZ - lastSeenZ).toFixed(4));
+                }
+
+                // If movement detected and debounced long enough, apply fallback
+                if (movementDetected && !fallbackApplied && (performance.now() - lastMovementTime) >= FALLBACK_DEBOUNCE_MS) {
+                    applyFallback();
+                    // do not return here; still allow regular success to be detected later
+                    couchCheckerId = null;
+                    return;
+                }
+
+                // Update status with remaining distance (user-friendly)
+                const remaining = Math.max(0, (requiredMove - movedIn)).toFixed(2);
+                statusEl.textContent = `Status: Move couch inward by ~${remaining} more units.`;
+
+                lastSeenZ = currentZ;
+                couchCheckerId = requestAnimationFrame(checkLoop);
+            }
+
+            couchCheckerId = requestAnimationFrame(checkLoop);
+        };
+
+        window.endCouchExercise = function () {
+            const modal = document.getElementById('couchModal');
+            modal.style.display = 'none';
+            couchExerciseActive = false;
+            if (couchCheckerId) { cancelAnimationFrame(couchCheckerId); couchCheckerId = null; }
+            couchExerciseStartZ = null;
+            console.log('Couch move exercise ended by user (OK). Modal closed.');
+        };
+
+        window.cancelCouchExercise = function () {
+            const modal = document.getElementById('couchModal');
+            modal.style.display = 'none';
+            couchExerciseActive = false;
+            if (couchCheckerId) { cancelAnimationFrame(couchCheckerId); couchCheckerId = null; }
+            couchExerciseStartZ = null;
+            console.log('Couch move exercise cancelled by user.');
+        };
+
+        function onWindowResize() {
+            if (!camera || !renderer) return;
+            const newWidth = window.innerWidth - 220;
+            const newHeight = window.innerHeight;
+            camera.aspect = newWidth / newHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(newWidth, newHeight);
+            if (labelRenderer) {
+                labelRenderer.setSize(newWidth, newHeight);
+                const canvas = document.querySelector('#c');
+                if (canvas) {
+                    labelRenderer.domElement.style.left = canvas.offsetLeft + 'px';
+                    labelRenderer.domElement.style.top = canvas.offsetTop + 'px';
+                }
+            }
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const elapsedTime = clock.getElapsedTime();
+            if (motionEnabled && patientMesh) {
+                const motionOffset = Math.sin(elapsedTime * motionSpeedFactor * Math.PI) * motionAmplitude;
+                patientMesh.position.y = patientBaseY + motionOffset;
+            } else if (!motionEnabled && patientMesh && patientMesh.position.y !== patientBaseY) {
+                patientMesh.position.y = patientBaseY;
+            }
+
+            updateTreatmentBeamPosition();
+
+            checkLaserTumorCollisions();
+
+            if (window.__mriPanel && couchGroup) {
+                window.__mriPanel.onCouchUpdate(
+                    couchGroup.position.z,
+                    userDefinedIsocenterPos.z,
+                    longitudinalLimitIn,
+                    longitudinalLimitOut,
+                    isScanning,
+                );
+            }
+
+            if (renderer && controls && scene && camera) {
+                controls.update();
+                renderer.render(scene, camera);
+                if (labelRenderer) {
+                    labelRenderer.render(scene, camera);
+                }
+            }
+        }
+        init();
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const tutorialKey = getQSParam('tutorial');
+            if (tutorialKey) {
+                if (window.startTutorial) {
+                    window.startTutorial(tutorialKey);
+                }
+            }
+        });
+
+    </script>
+
+    <script type="module">
+        // ---------------------------------------------------------------
+        // MR Slice Preview panel — independent module, communicates with
+        // the main simulator only through window.__mriPanel.onCouchUpdate()
+        // (called once per frame from the main animate() loop) and by
+        // wrapping window.startScan (already the public entry point the
+        // Half/Full Scan buttons call). If this script fails to load for
+        // any reason, the main simulator is unaffected — the animate()
+        // call site is guarded with `if (window.__mriPanel)`, and the
+        // wrap below only activates if window.startScan already exists.
+        // ---------------------------------------------------------------
+        import { loadNiftiGz, getSlice, sliceCount, renderSliceToCanvas } from './nifti-lite.js';
+
+        const CATALOG = [
+            {
+                id: 'brain-mets-prototype-001', label: 'Brain Mets — Prototype 001',
+                series: {
+                    flair: 'mri-data/brain-mets-prototype-001/flair.nii.gz',
+                    t1ce:  'mri-data/brain-mets-prototype-001/t1ce.nii.gz',
+                },
+            },
+            {
+                id: 'brain-mets-prototype-002', label: 'Brain Mets — Prototype 002',
+                series: {
+                    flair: 'mri-data/brain-mets-prototype-002/flair.nii.gz',
+                    t1ce:  'mri-data/brain-mets-prototype-002/t1ce.nii.gz',
+                },
+            },
+            {
+                id: 'brain-mets-prototype-003', label: 'Brain Mets — Prototype 003',
+                series: {
+                    flair: 'mri-data/brain-mets-prototype-003/flair.nii.gz',
+                    t1ce:  'mri-data/brain-mets-prototype-003/t1ce.nii.gz',
+                },
+            },
+        ];
+        const SERIES_LABELS = { flair: 'FLAIR', t1ce: 'T1 Contrast-Enhanced' };
+
+        // --- DOM refs ---
+        const caseSelect = document.getElementById('mriCaseSelect');
+        const seriesSelect = document.getElementById('mriSeriesSelect');
+        const viewGroup = document.getElementById('mriViewGroup');
+        const planeGroup = document.getElementById('mriPlaneGroup');
+        const statusEl = document.getElementById('mriStatus');
+        const autoFollowCheckbox = document.getElementById('mriAutoFollowCheckbox');
+
+        const singleWrap = document.getElementById('mriSingleWrap');
+        const tripleWrap = document.getElementById('mriTripleWrap');
+        const canvas = document.getElementById('mriCanvas');
+        const sliceReadout = document.getElementById('mriSliceReadout');
+        const sliceSlider = document.getElementById('mriSliceSlider');
+
+        const tripleCanvas = {
+            axial: document.getElementById('mriCanvasAxial'),
+            sagittal: document.getElementById('mriCanvasSagittal'),
+            coronal: document.getElementById('mriCanvasCoronal'),
+        };
+        const tripleReadout = {
+            axial: document.getElementById('mriReadoutAxial'),
+            sagittal: document.getElementById('mriReadoutSagittal'),
+            coronal: document.getElementById('mriReadoutCoronal'),
+        };
+        const tripleSlider = {
+            axial: document.getElementById('mriSliderAxial'),
+            sagittal: document.getElementById('mriSliderSagittal'),
+            coronal: document.getElementById('mriSliderCoronal'),
+        };
+
+        const setSuperiorBtn = document.getElementById('mriSetSuperiorBtn');
+        const setInferiorBtn = document.getElementById('mriSetInferiorBtn');
+        const rangeStatusEl = document.getElementById('mriRangeStatus');
+        const scanRangeBtn = document.getElementById('mriScanRangeBtn');
+        const clearRangeBtn = document.getElementById('mriClearRangeBtn');
+
+        // --- State ---
+        const volumeCache = new Map(); // "caseId:seriesKey" -> NiftiVolume
+        let currentVolume = null;
+        let viewMode = 'single'; // 'single' | 'triple'
+        let currentPlane = 'axial'; // single-view plane selector
+        // Shared 3D cursor in voxel-index space — the single source of
+        // truth for "where" in the volume every pane is looking. Axial
+        // reads cursor.z, sagittal reads cursor.x, coronal reads cursor.y.
+        let cursor = { x: 0, y: 0, z: 0 };
+        let loadToken = 0; // guards out-of-order async loads
+
+        // Continuously-updated couch/iso state (every frame, regardless of
+        // scanning), so a scan's *own* start position is always known the
+        // instant it begins — this is what makes slice tracking correct
+        // regardless of where the couch happened to be sitting beforehand.
+        let lastCouchZ = 0, lastIsoZ = 0;
+
+        // The in-progress scan's own start/target Z, captured when it
+        // begins. Slice progress is computed relative to THIS range, not
+        // the couch's full theoretical travel limits — so a Full Scan
+        // always shows every slice in order regardless of starting
+        // position or isocenter changes, instead of only covering
+        // whatever fraction of the full range that particular scan happened to be.
+        let scanSession = null;
+
+        // Superior/inferior scan-range borders (couch Z, world space),
+        // marked by the user at their current couch position.
+        let scanRange = { superiorZ: null, inferiorZ: null };
+
+        function axisForPlane(plane) {
+            return plane === 'axial' ? 'z' : plane === 'sagittal' ? 'x' : 'y';
+        }
+
+        function populateSelects() {
+            for (const c of CATALOG) {
+                const opt = document.createElement('option');
+                opt.value = c.id;
+                opt.textContent = c.label;
+                caseSelect.appendChild(opt);
+            }
+            for (const key of Object.keys(SERIES_LABELS)) {
+                const opt = document.createElement('option');
+                opt.value = key;
+                opt.textContent = SERIES_LABELS[key];
+                seriesSelect.appendChild(opt);
+            }
+        }
+
+        function setActiveButton(group, attr, value) {
+            [...group.children].forEach((btn) => {
+                btn.classList.toggle('active', btn.dataset[attr] === value);
+            });
+        }
+
+        function clampCursorToVolume() {
+            if (!currentVolume) return;
+            cursor.x = Math.max(0, Math.min(cursor.x, currentVolume.nx - 1));
+            cursor.y = Math.max(0, Math.min(cursor.y, currentVolume.ny - 1));
+            cursor.z = Math.max(0, Math.min(cursor.z, currentVolume.nz - 1));
+        }
+
+        function redrawSingle() {
+            if (!currentVolume) return;
+            const axis = axisForPlane(currentPlane);
+            const index = cursor[axis];
+            const total = sliceCount(currentVolume, currentPlane);
+            const slice = getSlice(currentVolume, currentPlane, index);
+            renderSliceToCanvas(slice, canvas, currentVolume, 256);
+            sliceReadout.textContent = `Slice ${index + 1} / ${total}`;
+            sliceSlider.max = String(total - 1);
+            sliceSlider.value = String(index);
+        }
+
+        function redrawTriple() {
+            if (!currentVolume) return;
+            for (const plane of ['axial', 'sagittal', 'coronal']) {
+                const axis = axisForPlane(plane);
+                const index = cursor[axis];
+                const total = sliceCount(currentVolume, plane);
+                const slice = getSlice(currentVolume, plane, index);
+                renderSliceToCanvas(slice, tripleCanvas[plane], currentVolume, 180);
+                tripleReadout[plane].textContent = `${plane[0].toUpperCase()}${plane.slice(1)}: ${index + 1} / ${total}`;
+                tripleSlider[plane].max = String(total - 1);
+                tripleSlider[plane].value = String(index);
+            }
+        }
+
+        function redraw() {
+            if (viewMode === 'single') redrawSingle();
+            else redrawTriple();
+        }
+
+        function setViewMode(mode) {
+            viewMode = mode;
+            setActiveButton(viewGroup, 'view', mode);
+            singleWrap.style.display = mode === 'single' ? '' : 'none';
+            tripleWrap.style.display = mode === 'triple' ? '' : 'none';
+            planeGroup.style.display = mode === 'single' ? '' : 'none';
+            redraw();
+        }
+
+        async function loadSelectedVolume() {
+            const caseEntry = CATALOG.find((c) => c.id === caseSelect.value);
+            const seriesKey = seriesSelect.value;
+            const url = caseEntry.series[seriesKey];
+            const cacheKey = `${caseEntry.id}:${seriesKey}`;
+            const myToken = ++loadToken;
+
+            statusEl.textContent = `Loading ${caseEntry.label} — ${SERIES_LABELS[seriesKey]}…`;
+
+            let volume = volumeCache.get(cacheKey);
+            if (!volume) {
+                try {
+                    volume = await loadNiftiGz(url);
+                    volumeCache.set(cacheKey, volume);
+                } catch (err) {
+                    if (myToken !== loadToken) return;
+                    console.error('MRI panel: failed to load volume', err);
+                    statusEl.textContent = `Failed to load: ${err.message}`;
+                    return;
+                }
+            }
+            if (myToken !== loadToken) return;
+
+            currentVolume = volume;
+            cursor = { x: Math.floor(volume.nx / 2), y: Math.floor(volume.ny / 2), z: Math.floor(volume.nz / 2) };
+            statusEl.textContent = `${caseEntry.label} — ${SERIES_LABELS[seriesKey]} (${currentVolume.nx}×${currentVolume.ny}×${currentVolume.nz})`;
+            redraw();
+        }
+
+        function formatRangeStatus() {
+            const { superiorZ, inferiorZ } = scanRange;
+            if (superiorZ === null && inferiorZ === null) {
+                rangeStatusEl.textContent = 'No borders marked yet.';
+            } else if (superiorZ === null) {
+                rangeStatusEl.textContent = `Inferior border set (z=${inferiorZ.toFixed(1)}). Mark superior border too.`;
+            } else if (inferiorZ === null) {
+                rangeStatusEl.textContent = `Superior border set (z=${superiorZ.toFixed(1)}). Mark inferior border too.`;
+            } else {
+                const distance = Math.abs(inferiorZ - superiorZ).toFixed(1);
+                rangeStatusEl.textContent = `Range set: ${distance} units, superior z=${superiorZ.toFixed(1)} to inferior z=${inferiorZ.toFixed(1)}.`;
+            }
+            scanRangeBtn.disabled = !(superiorZ !== null && inferiorZ !== null);
+        }
+
+        // --- Event wiring ---
+        caseSelect.addEventListener('change', loadSelectedVolume);
+        seriesSelect.addEventListener('change', loadSelectedVolume);
+
+        viewGroup.addEventListener('click', (e) => {
+            const btn = e.target.closest('button[data-view]');
+            if (!btn) return;
+            setViewMode(btn.dataset.view);
+        });
+
+        planeGroup.addEventListener('click', (e) => {
+            const btn = e.target.closest('button[data-plane]');
+            if (!btn || !currentVolume) return;
+            currentPlane = btn.dataset.plane;
+            setActiveButton(planeGroup, 'plane', currentPlane);
+            redrawSingle();
+        });
+
+        sliceSlider.addEventListener('input', () => {
+            if (!currentVolume) return;
+            cursor[axisForPlane(currentPlane)] = parseInt(sliceSlider.value, 10) || 0;
+            clampCursorToVolume();
+            redrawSingle();
+        });
+
+        for (const plane of ['axial', 'sagittal', 'coronal']) {
+            tripleSlider[plane].addEventListener('input', () => {
+                if (!currentVolume) return;
+                cursor[axisForPlane(plane)] = parseInt(tripleSlider[plane].value, 10) || 0;
+                clampCursorToVolume();
+                redrawTriple();
+            });
+        }
+
+        setSuperiorBtn.addEventListener('click', () => {
+            scanRange.superiorZ = lastCouchZ;
+            formatRangeStatus();
+        });
+        setInferiorBtn.addEventListener('click', () => {
+            scanRange.inferiorZ = lastCouchZ;
+            formatRangeStatus();
+        });
+        clearRangeBtn.addEventListener('click', () => {
+            scanRange = { superiorZ: null, inferiorZ: null };
+            formatRangeStatus();
+        });
+        scanRangeBtn.addEventListener('click', () => {
+            if (scanRange.inferiorZ === null || typeof window.startScan !== 'function') return;
+            // Scans from the couch's current position to the marked
+            // inferior border. (The couch does not automatically jump to
+            // the superior border first — move it there manually before
+            // starting if you want the scan to begin exactly at your
+            // marked superior point.)
+            const targetRelativeToIso = scanRange.inferiorZ - lastIsoZ;
+            window.startScan(targetRelativeToIso, 3000);
+        });
+
+        populateSelects();
+        setViewMode('single');
+        formatRangeStatus();
+        loadSelectedVolume();
+
+        // --- Wrap window.startScan so we know each scan's own start/target ---
+        function wrapStartScan() {
+            const original = window.startScan;
+            if (typeof original !== 'function' || original.__mriWrapped) return;
+            const wrapped = function (targetZRelativeToIso, duration) {
+                scanSession = {
+                    startZ: lastCouchZ,
+                    targetZ: lastIsoZ + targetZRelativeToIso,
+                };
+                return original(targetZRelativeToIso, duration);
+            };
+            wrapped.__mriWrapped = true;
+            window.startScan = wrapped;
+        }
+        // The main script assigns window.startScan synchronously during its
+        // own module evaluation, which runs before this later script block,
+        // so it's already present — but poll briefly in case load order
+        // ever changes, rather than assuming.
+        wrapStartScan();
+        if (typeof window.startScan !== 'function') {
+            const pollId = setInterval(() => {
+                if (typeof window.startScan === 'function') {
+                    wrapStartScan();
+                    clearInterval(pollId);
+                }
+            }, 100);
+        }
+
+        // --- Public hook called once per frame from the main animate() loop ---
+        window.__mriPanel = {
+            onCouchUpdate(couchZ, isoZ, limitIn, limitOut, isScanning) {
+                lastCouchZ = couchZ;
+                lastIsoZ = isoZ;
+
+                if (!isScanning || !currentVolume || !autoFollowCheckbox.checked) {
+                    if (!isScanning) scanSession = null; // reset once the scan ends
+                    return;
+                }
+
+                // Auto-follow always tracks axial (the physical couch axis).
+                if (viewMode === 'single' && currentPlane !== 'axial') {
+                    currentPlane = 'axial';
+                    setActiveButton(planeGroup, 'plane', 'axial');
+                }
+
+                const total = sliceCount(currentVolume, 'axial');
+                let nextIndex;
+                if (scanSession && scanSession.targetZ !== scanSession.startZ) {
+                    // Progress relative to THIS scan's own start->target, so
+                    // Full Scan always covers slice 0..N-1 regardless of
+                    // where the couch started.
+                    const progress = Math.max(0, Math.min(1,
+                        (couchZ - scanSession.startZ) / (scanSession.targetZ - scanSession.startZ)));
+                    nextIndex = Math.round(progress * (total - 1));
+                } else {
+                    // Fallback (e.g. scanning started before this script
+                    // finished wrapping startScan): full theoretical range.
+                    const rangeStart = isoZ + limitIn;
+                    const rangeEnd = isoZ + limitOut;
+                    const progress = Math.max(0, Math.min(1, (couchZ - rangeStart) / (rangeEnd - rangeStart)));
+                    nextIndex = Math.round(progress * (total - 1));
+                }
+
+                if (nextIndex !== cursor.z) {
+                    cursor.z = nextIndex;
+                    redraw();
+                }
+            },
+        };
+    </script>
+</body>
+</html>

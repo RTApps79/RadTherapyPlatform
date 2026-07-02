@@ -17,20 +17,14 @@ import type { ModuleDefinition } from "@core/types";
 import { HomeModule } from "./home/HomeModule";
 import { createPlaceholderModule } from "./placeholder/PlaceholderModule";
 import { createLegacyIframeModule } from "./legacy/LegacyIframeModule";
+import { PatientLibraryModule } from "./patient-library/PatientLibraryModule";
+import { DicomStudioModule } from "./dicom-studio/DicomStudioModule";
 
 export function buildModuleRegistry(): ModuleDefinition[] {
   return [
     HomeModule,
 
-    createPlaceholderModule({
-      id: "patient-library",
-      title: "Patient Library",
-      description:
-        "Large, searchable patient library (site, diagnosis, histology, stage, intent, " +
-        "technique, modality, difficulty, competency) with case metadata.",
-      order: 1,
-      plannedIn: "Phase 5 — Patient Library Integration",
-    }),
+    PatientLibraryModule,
 
     createLegacyIframeModule({
       id: "consultation-ois",
@@ -42,25 +36,17 @@ export function buildModuleRegistry(): ModuleDefinition[] {
       srcPath: "legacy/ois/index.html",
     }),
 
-    createPlaceholderModule({
+    createLegacyIframeModule({
       id: "ct-simulation",
       title: "CT Simulation",
       description:
-        "Patient setup, positioning, immobilization, scan range, reference marks, setup " +
-        "photos, contrast protocol, and CT dataset creation/transfer.",
+        "3D CT simulator: patient positioning, couch/gantry motion, respiratory motion, " +
+        "isocenter setup, and a live MR slice preview that tracks couch position during scan.",
       order: 3,
-      plannedIn: "Phase 2 — Legacy Module Integration",
+      srcPath: "legacy/ct-simulation/index.html",
     }),
 
-    createPlaceholderModule({
-      id: "dicom-studio",
-      title: "DICOM Studio",
-      description:
-        "Unified multi-format DICOM/NIfTI viewer: stack scrolling, window/level, pan, " +
-        "zoom, HU readout, measurements, MPR, and fusion.",
-      order: 4,
-      plannedIn: "Phase 3 — Imaging Core Extraction",
-    }),
+    DicomStudioModule,
 
     createLegacyIframeModule({
       id: "dosimetry-tps",
@@ -82,14 +68,14 @@ export function buildModuleRegistry(): ModuleDefinition[] {
       plannedIn: "Phase 7 — Workflow and Education",
     }),
 
-    createPlaceholderModule({
+    createLegacyIframeModule({
       id: "treatment-delivery",
       title: "Treatment Delivery",
       description:
-        "Record-and-verify, image guidance, gantry/couch/collimator/MLC controls, " +
-        "interlocks, setup verification, and fraction delivery.",
+        "LINAC treatment console: interlocks, MU delivery, beam's-eye-view/MLC, " +
+        "IGRT image matching with couch correction, and a setup/triangulation exercise.",
       order: 7,
-      plannedIn: "Phase 7 — Workflow and Education",
+      srcPath: "legacy/treatment-delivery/index.html",
     }),
 
     createPlaceholderModule({
