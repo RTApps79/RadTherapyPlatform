@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RTApps · Planning Suite (TPS)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#081628; --bg2:#0b1c2d; --panel:rgba(11,28,45,0.92); --stroke:rgba(120,200,210,0.18);
+    --stroke2:rgba(120,200,210,0.4); --ink:#e0e8f1; --dim:#9fb0c5; --teal:#04d9ff; --teal2:#3fd6cf;
+    --green:#34d399; --amber:#ffb86b; --red:#fb7185; --violet:#b58bff; --blue:#6fb6ff;
+    --radius:12px; --shadow:0 14px 40px rgba(0,0,0,0.5);
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html,body{ height:100%; background:var(--bg); color:var(--ink); font-family:"IBM Plex Sans",system-ui,sans-serif; overflow:hidden; }
+  button,select,input{ font-family:inherit; }
+  #app{ display:grid; grid-template-rows:auto 1fr auto; height:100vh; }
+
+  /* top bar */
+  header{ display:flex; align-items:center; gap:14px; padding:9px 16px; background:var(--bg2); border-bottom:1px solid var(--stroke); }
+  .brand{ font-family:"Bricolage Grotesque"; font-weight:800; font-size:15px; letter-spacing:.3px; white-space:nowrap; }
+  .brand b{ color:var(--teal); } .brand span{ color:var(--dim); font-weight:600; font-size:12px; }
+  header .sp{ flex:1; }
+  .seg{ display:flex; background:rgba(255,255,255,0.05); border:1px solid var(--stroke); border-radius:999px; padding:3px; }
+  .seg button{ border:0; background:transparent; color:var(--dim); font-size:12.5px; font-weight:600; padding:6px 16px; border-radius:999px; cursor:pointer; }
+  .seg button.active{ background:var(--teal); color:#03293a; }
+  select,.hbtn{ background:rgba(255,255,255,0.05); border:1px solid var(--stroke); color:var(--ink); border-radius:8px; padding:7px 10px; font-size:12.5px; cursor:pointer; }
+  .hbtn:hover,select:hover{ border-color:var(--stroke2); }
+
+  /* main */
+  main{ display:grid; grid-template-columns:188px 1fr 320px; min-height:0; }
+  .col{ min-height:0; overflow-y:auto; background:var(--bg2); }
+  .col.left{ border-right:1px solid var(--stroke); }
+  .col.right{ border-left:1px solid var(--stroke); }
+  .col::-webkit-scrollbar{ width:8px; } .col::-webkit-scrollbar-thumb{ background:rgba(120,200,210,0.2); border-radius:8px; }
+  .vp{ position:relative; background:#000; min-width:0; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+  #stage{ position:absolute; inset:0; }
+  canvas{ display:block; }
+
+  .grp{ padding:12px 13px; border-bottom:1px solid var(--stroke); }
+  .gt{ font-family:"Bricolage Grotesque"; font-weight:700; font-size:10.5px; letter-spacing:.8px; text-transform:uppercase; color:var(--dim); margin-bottom:9px; display:flex; align-items:center; gap:7px; justify-content:space-between; }
+  .gt .add{ font-size:11px; color:var(--teal); cursor:pointer; }
+  .b{ width:100%; border:1px solid var(--stroke); background:rgba(255,255,255,0.045); color:var(--ink); font-size:12px; font-weight:500; padding:8px; border-radius:8px; cursor:pointer; transition:.12s; display:flex; align-items:center; justify-content:center; gap:6px; }
+  .b:hover{ background:rgba(4,217,255,0.12); border-color:var(--stroke2); }
+  .b.active{ background:rgba(4,217,255,0.2); border-color:var(--teal); color:var(--teal); }
+  .b.primary{ background:var(--teal); color:#03293a; border-color:transparent; font-weight:700; }
+  .b.primary:hover{ filter:brightness(1.08); background:var(--teal); }
+  .b.sm{ padding:6px; font-size:11px; }
+  .brow{ display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+  .brow.three{ grid-template-columns:1fr 1fr 1fr; }
+  .tool{ display:flex; flex-direction:column; gap:6px; }
+
+  .sl{ margin:8px 0 2px; }
+  .sl .lab{ display:flex; justify-content:space-between; font-size:11.5px; color:var(--dim); margin-bottom:5px; }
+  .sl .lab b{ color:var(--ink); font-family:"IBM Plex Mono"; font-weight:500; }
+  input[type=range]{ -webkit-appearance:none; width:100%; height:4px; border-radius:4px; background:rgba(255,255,255,0.14); outline:none; }
+  input[type=range]::-webkit-slider-thumb{ -webkit-appearance:none; width:15px; height:15px; border-radius:50%; background:var(--teal); cursor:pointer; box-shadow:0 0 0 4px rgba(4,217,255,0.18); }
+  input[type=range]::-moz-range-thumb{ width:15px;height:15px;border-radius:50%;background:var(--teal);border:0;cursor:pointer; }
+
+  .struct{ display:flex; align-items:center; gap:8px; padding:7px 8px; border:1px solid var(--stroke); border-radius:8px; margin-bottom:6px; cursor:pointer; }
+  .struct.sel{ border-color:var(--teal); background:rgba(4,217,255,0.1); }
+  .struct .sw{ width:12px; height:12px; border-radius:3px; flex:none; }
+  .struct .nm{ font-size:12px; flex:1; } .struct .meta{ font-size:10px; color:var(--dim); font-family:"IBM Plex Mono"; }
+  .struct .del{ color:var(--dim); cursor:pointer; font-size:13px; } .struct .del:hover{ color:var(--red); }
+
+  .beam{ display:flex; align-items:center; gap:7px; padding:7px 8px; border:1px solid var(--stroke); border-radius:8px; margin-bottom:6px; }
+  .beam .nm{ font-family:"IBM Plex Mono"; font-size:11.5px; width:42px; }
+  .beam input[type=range]{ flex:1; }
+  .beam .v{ font-family:"IBM Plex Mono"; font-size:11px; width:34px; text-align:right; color:var(--teal2); }
+  .beam .del{ color:var(--dim); cursor:pointer; } .beam .del:hover{ color:var(--red); }
+
+  .obj{ border:1px solid var(--stroke); border-radius:8px; padding:8px; margin-bottom:7px; }
+  .obj .r{ display:flex; align-items:center; gap:8px; font-size:11.5px; }
+  .obj .r b{ color:var(--ink); } .obj input[type=number]{ width:56px; background:rgba(0,0,0,0.3); border:1px solid var(--stroke); color:var(--ink); border-radius:6px; padding:4px 6px; font-family:"IBM Plex Mono"; }
+
+  .read{ font-family:"IBM Plex Mono"; font-size:11.5px; background:rgba(0,0,0,0.3); border:1px solid var(--stroke); border-radius:9px; padding:9px 11px; line-height:1.8; }
+  .read .row{ display:flex; justify-content:space-between; } .read .row span{ color:var(--dim); } .read .row b{ color:var(--teal2); font-weight:500; }
+  .note{ font-size:11px; color:var(--dim); line-height:1.5; background:rgba(255,255,255,0.03); border-left:2px solid var(--teal); border-radius:0 8px 8px 0; padding:8px 10px; }
+
+  #dvh{ width:100%; height:200px; background:#06121d; border:1px solid var(--stroke); border-radius:9px; display:block; }
+  .legend{ display:flex; flex-wrap:wrap; gap:8px 12px; margin-top:7px; font-size:10.5px; color:var(--dim); }
+  .legend i{ display:inline-block; width:14px; height:5px; border-radius:3px; vertical-align:middle; margin-right:4px; }
+
+  /* viewport overlays */
+  .vpbar{ position:absolute; left:50%; bottom:12px; transform:translateX(-50%); display:flex; align-items:center; gap:10px;
+    background:var(--panel); border:1px solid var(--stroke); border-radius:999px; padding:7px 14px; backdrop-filter:blur(8px); z-index:5; }
+  .vpbar input[type=range]{ width:220px; }
+  .vpbar .si{ font-family:"IBM Plex Mono"; font-size:11px; color:var(--teal2); min-width:78px; }
+  .vptag{ position:absolute; top:12px; left:12px; font-family:"IBM Plex Mono"; font-size:11px; color:var(--dim); background:var(--panel); border:1px solid var(--stroke); border-radius:8px; padding:6px 10px; z-index:5; }
+  .vptag b{ color:var(--ink); }
+  .isodose-leg{ position:absolute; top:12px; right:12px; background:var(--panel); border:1px solid var(--stroke); border-radius:8px; padding:8px 10px; z-index:5; font-size:10.5px; }
+  .isodose-leg .l{ display:flex; align-items:center; gap:6px; margin:2px 0; } .isodose-leg i{ width:14px; height:8px; border-radius:2px; }
+
+  footer{ display:flex; align-items:center; gap:14px; padding:7px 16px; background:var(--bg2); border-top:1px solid var(--stroke); font-size:11.5px; color:var(--dim); }
+  footer .st{ flex:1; font-family:"IBM Plex Mono"; } footer .cp{ font-size:10px; opacity:.7; } footer .cp b{ color:var(--teal2); }
+
+  #busy{ position:absolute; inset:0; display:none; align-items:center; justify-content:center; background:rgba(3,8,14,0.6); z-index:10; flex-direction:column; gap:12px; }
+  #busy.show{ display:flex; }
+  #busy .ring{ width:42px;height:42px;border-radius:50%;border:4px solid rgba(4,217,255,0.2);border-top-color:var(--teal);animation:spin .9s linear infinite; }
+  @keyframes spin{ to{ transform:rotate(360deg); } } #busy .t{ font-size:12.5px; color:var(--dim); }
+  .hide{ display:none !important; }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="brand"><b>◎ RTApps</b> · Planning Suite <span>TPS</span></div>
+    <select id="datasetSel" title="CT dataset"></select>
+    <button class="hbtn" id="loadFolder">Load folder…</button>
+    <input type="file" id="folderInput" webkitdirectory directory multiple class="hide">
+    <div class="sp"></div>
+    <div class="seg" id="modeSeg">
+      <button data-mode="forward" class="active">Forward</button>
+      <button data-mode="inverse">Inverse</button>
+    </div>
+    <button class="hbtn" id="savePlan">Save</button>
+    <button class="hbtn" id="loadPlanBtn">Load</button>
+    <input type="file" id="loadPlanInput" accept="application/json" class="hide">
+    <button class="hbtn" id="exportPlan">Export</button>
+  </header>
+
+  <main>
+    <!-- LEFT: tools -->
+    <div class="col left">
+      <div class="grp">
+        <div class="gt">Window / Level</div>
+        <div class="sl"><div class="lab"><span>Brightness</span><b id="brV">100</b></div><input type="range" id="brightness" min="20" max="220" value="100"></div>
+        <div class="sl"><div class="lab"><span>Contrast</span><b id="ctV">110</b></div><input type="range" id="contrast" min="40" max="260" value="110"></div>
+        <div class="brow"><button class="b sm" data-wl="soft">Soft</button><button class="b sm" data-wl="bone">Bone</button></div>
+      </div>
+      <div class="grp">
+        <div class="gt">View</div>
+        <div class="sl"><div class="lab"><span>Zoom</span><b id="zmV">1.0×</b></div><input type="range" id="zoom" min="60" max="320" value="100"></div>
+        <div class="brow"><button class="b sm" id="resetView">Reset view</button><button class="b sm" id="fitView">Fit</button></div>
+        <div class="tool" style="margin-top:8px;">
+          <button class="b" id="toolIso">◎ Set Isocenter</button>
+        </div>
+      </div>
+      <div class="grp">
+        <div class="gt">Contouring</div>
+        <div class="brow"><button class="b sm" data-tool="brush">● Brush</button><button class="b sm" data-tool="poly">⬡ Polygon</button></div>
+        <div class="brow" style="margin-top:6px;"><button class="b sm" data-tool="erase">⌫ Erase</button><button class="b sm" data-tool="pan">✥ Pan</button></div>
+        <div class="sl"><div class="lab"><span>Brush size</span><b id="brushV">22</b></div><input type="range" id="brushSize" min="6" max="60" value="22"></div>
+        <div class="note">Contour the active structure on the planning slice. Brush paints; Polygon clicks points then double-click/Enter to close.</div>
+      </div>
+      <div class="grp">
+        <div class="gt">Structures <span class="add" id="addStruct">+ add</span></div>
+        <div id="structList"></div>
+      </div>
+    </div>
+
+    <!-- CENTER: viewport -->
+    <div class="vp" id="vp">
+      <div id="stage"></div>
+      <div class="vptag" id="vptag">—</div>
+      <div class="isodose-leg" id="isoLeg"></div>
+      <div class="vpbar">
+        <span class="si" id="sliceInfo">slice —</span>
+        <input type="range" id="sliceSlider" min="0" max="0" value="0">
+      </div>
+      <div id="busy"><div class="ring"></div><div class="t" id="busyT">Loading…</div></div>
+    </div>
+
+    <!-- RIGHT: planning -->
+    <div class="col right">
+      <!-- forward -->
+      <div id="forwardPanel">
+        <div class="grp">
+          <div class="gt">Prescription</div>
+          <div class="sl"><div class="lab"><span>Rx dose</span><b id="rxV">60.0 Gy</b></div><input type="range" id="rxDose" min="20" max="80" value="60" step="1"></div>
+          <div class="sl"><div class="lab"><span>Field width</span><b id="fwV">7.0 cm</b></div><input type="range" id="fieldW" min="20" max="160" value="70"></div>
+        </div>
+        <div class="grp">
+          <div class="gt">Beams <span class="add" id="addBeam">+ beam</span></div>
+          <div id="beamList"></div>
+          <div class="brow three" style="margin-top:6px;">
+            <button class="b sm" data-preset="2op">2-field</button>
+            <button class="b sm" data-preset="4box">4-box</button>
+            <button class="b sm" data-preset="imrt7">7-field</button>
+          </div>
+        </div>
+        <div class="grp"><button class="b primary" id="calcDose">⚡ Calculate Dose</button>
+          <label class="struct" style="margin-top:8px;cursor:pointer;"><input type="checkbox" id="liveCalc" style="accent-color:var(--teal)"> <span class="nm">Live recalculation</span></label>
+        </div>
+      </div>
+      <!-- inverse -->
+      <div id="inversePanel" class="hide">
+        <div class="grp">
+          <div class="gt">Prescription</div>
+          <div class="sl"><div class="lab"><span>Rx dose</span><b id="rxV2">60.0 Gy</b></div><input type="range" id="rxDose2" min="20" max="80" value="60" step="1"></div>
+          <div class="sl"><div class="lab"><span>Beam angles</span><b id="nbV">7</b></div><input type="range" id="nBeams" min="3" max="11" value="7" step="2"></div>
+        </div>
+        <div class="grp">
+          <div class="gt">Objectives</div>
+          <div id="objList"></div>
+          <div class="note">Targets pull dose up to Rx; OARs push dose down under their limit. Set limits, then optimize.</div>
+        </div>
+        <div class="grp">
+          <button class="b primary" id="optimize">⚙ Optimize Plan</button>
+          <div class="brow" style="margin-top:8px;"><button class="b sm" id="stopOpt">Stop</button><button class="b sm" id="resetOpt">Reset</button></div>
+          <div class="sl"><div class="lab"><span>Objective cost</span><b id="costV">—</b></div><input type="range" id="optProg" min="0" max="100" value="0" disabled></div>
+        </div>
+      </div>
+
+      <!-- DVH + metrics (shared) -->
+      <div class="grp">
+        <div class="gt">Dose–Volume Histogram</div>
+        <canvas id="dvh" width="296" height="200"></canvas>
+        <div class="legend" id="dvhLegend"></div>
+      </div>
+      <div class="grp">
+        <div class="gt">Plan Metrics</div>
+        <div class="read" id="metrics"><div class="row"><span>Calculate a plan…</span><b></b></div></div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <div class="st" id="status">Ready.</div>
+    <div class="cp">© 2026 <b>RTApps</b> · Planning Suite — educational simulation, not for clinical use</div>
+  </footer>
+</div>
+<script src="./tps.js"></script>
+</body>
+</html>

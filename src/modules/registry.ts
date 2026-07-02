@@ -16,6 +16,7 @@
 import type { ModuleDefinition } from "@core/types";
 import { HomeModule } from "./home/HomeModule";
 import { createPlaceholderModule } from "./placeholder/PlaceholderModule";
+import { createLegacyIframeModule } from "./legacy/LegacyIframeModule";
 
 export function buildModuleRegistry(): ModuleDefinition[] {
   return [
@@ -31,14 +32,14 @@ export function buildModuleRegistry(): ModuleDefinition[] {
       plannedIn: "Phase 5 — Patient Library Integration",
     }),
 
-    createPlaceholderModule({
+    createLegacyIframeModule({
       id: "consultation-ois",
       title: "Consultation / OIS",
       description:
         "Worklist, demographics, diagnosis, prescription, course, fraction schedule, " +
         "imaging approvals, holds, and notes.",
       order: 2,
-      plannedIn: "Phase 2 — Legacy Module Integration",
+      srcPath: "legacy/ois/index.html",
     }),
 
     createPlaceholderModule({
@@ -61,14 +62,14 @@ export function buildModuleRegistry(): ModuleDefinition[] {
       plannedIn: "Phase 3 — Imaging Core Extraction",
     }),
 
-    createPlaceholderModule({
+    createLegacyIframeModule({
       id: "dosimetry-tps",
       title: "Dosimetry / TPS",
       description:
         "Structure creation, isocenter and beam placement, forward/inverse planning, " +
         "dose calculation, isodose display, DVH, and plan metrics.",
       order: 5,
-      plannedIn: "Phase 2 — Legacy Module Integration",
+      srcPath: "legacy/tps/index.html",
     }),
 
     createPlaceholderModule({
