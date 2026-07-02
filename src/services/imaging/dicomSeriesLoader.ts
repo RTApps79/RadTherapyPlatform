@@ -19,6 +19,7 @@ import type { Volume } from "./Volume";
 export interface DicomLoadResult {
   volume: Volume;
   skippedFiles: number;
+  skipped: SkippedFile[];
   warnings: string[];
 }
 
@@ -36,16 +37,31 @@ function multiFloat(ds: dicomParser.DataSet, tag: string): number[] {
   return raw.split("\\").map((s) => parseFloat(s)).filter((n) => Number.isFinite(n));
 }
 
-/** Parse a single DICOM file into calibrated HU pixel data + spatial metadata. Returns null if unusable. */
-async function parseSliceFile(file: File): Promise<{ slice: ParsedSlice; ds: dicomParser.DataSet } | null> {
+export type SkipReason =
+  | "not-dicom"
+  | "compressed-transfer-syntax"
+  | "no-pixel-data"
+  | "unsupported-bit-depth"
+  | "inconsistent-matrix-size";
+
+export interface SkippedFile {
+  filename: string;
+  reason: SkipReason;
+  detail?: string;
+}
+
+type ParseOutcome = { ok: true; slice: ParsedSlice; ds: dicomParser.DataSet } | { ok: false; reason: SkipReason; detail?: string };
+
+/** Parse a single DICOM file into calibrated HU pixel data + spatial metadata, reporting *why* on failure rather than just failing silently. */
+async function parseSliceFile(file: File): Promise<ParseOutcome> {
   const buffer = await file.arrayBuffer();
   const bytes = new Uint8Array(buffer);
 
   let ds: dicomParser.DataSet;
   try {
     ds = dicomParser.parseDicom(bytes);
-  } catch {
-    return null; // not a valid DICOM file
+  } catch (err) {
+    return { ok: false, reason: "not-dicom", detail: (err as Error).message };
   }
 
   const transferSyntax = ds.string("x00020010") ?? "";
@@ -53,17 +69,25 @@ async function parseSliceFile(file: File): Promise<{ slice: ParsedSlice; ds: dic
     // JPEG-family compressed transfer syntaxes — pixel data isn't directly
     // readable without a JPEG decoder we don't ship. Skip rather than
     // silently decode garbage.
-    return null;
+    return { ok: false, reason: "compressed-transfer-syntax", detail: transferSyntax };
   }
 
   const rows = ds.uint16("x00280010");
   const cols = ds.uint16("x00280011");
   const pixelDataElement = ds.elements.x7fe00010;
-  if (!rows || !cols || !pixelDataElement) return null;
+  if (!rows || !cols || !pixelDataElement) {
+    // Common and *expected* for non-image DICOM objects mixed into a real
+    // download folder: DICOMDIR index files, Structured Report (SR)
+    // objects, dose reports, presentation states. Not a bug — these
+    // legitimately carry no image pixel data.
+    return { ok: false, reason: "no-pixel-data", detail: ds.string("x00080060") /* Modality, if present */ };
+  }
 
   const bitsAllocated = ds.uint16("x00280100") ?? 16;
   const pixelRepresentation = ds.uint16("x00280103") ?? 0; // 0 = unsigned, 1 = signed
-  if (bitsAllocated !== 16 && bitsAllocated !== 8) return null;
+  if (bitsAllocated !== 16 && bitsAllocated !== 8) {
+    return { ok: false, reason: "unsupported-bit-depth", detail: `${bitsAllocated}-bit` };
+  }
 
   const slope = ds.floatString("x00281053") ?? 1;
   const intercept = ds.floatString("x00281052") ?? 0;
@@ -88,28 +112,26 @@ async function parseSliceFile(file: File): Promise<{ slice: ParsedSlice; ds: dic
 
   const z = ipp.length === 3 && Number.isFinite(ipp[2]) ? ipp[2]! : instanceNumber;
 
-  return {
-    slice: { hu, z, instanceNumber, rows, cols },
-    ds,
-  };
+  return { ok: true, slice: { hu, z, instanceNumber, rows, cols }, ds };
 }
 
 /**
  * Load a series of DICOM files (from a folder/multi-file picker) into a
- * single Volume. Files that aren't valid, usable DICOM (wrong modality
- * files mixed in, compressed pixel data, non-16/8-bit) are silently
- * skipped and counted rather than aborting the whole load.
+ * single Volume. Files that aren't valid, usable DICOM (DICOMDIR/SR/dose
+ * report objects with no pixel data, compressed pixel data, non-16/8-bit)
+ * are skipped and reported *with a reason* rather than the whole load
+ * aborting or the reason being lost.
  */
 export async function loadDicomSeries(files: File[] | FileList): Promise<DicomLoadResult> {
   const fileArray = Array.from(files);
   const warnings: string[] = [];
   const parsed: Array<{ slice: ParsedSlice; ds: dicomParser.DataSet }> = [];
-  let skipped = 0;
+  const skipped: SkippedFile[] = [];
 
   for (const file of fileArray) {
     const result = await parseSliceFile(file);
-    if (!result) {
-      skipped++;
+    if (!result.ok) {
+      skipped.push({ filename: file.name, reason: result.reason, detail: result.detail });
       continue;
     }
     parsed.push(result);
@@ -117,8 +139,8 @@ export async function loadDicomSeries(files: File[] | FileList): Promise<DicomLo
 
   if (parsed.length === 0) {
     throw new Error(
-      `loadDicomSeries: no usable DICOM slices found among ${fileArray.length} file(s) ` +
-        `(${skipped} skipped — unsupported format, compressed pixel data, or not DICOM)`,
+      `loadDicomSeries: no usable DICOM slices found among ${fileArray.length} file(s). ` +
+        summarizeSkipReasons(skipped),
     );
   }
 
@@ -126,10 +148,13 @@ export async function loadDicomSeries(files: File[] | FileList): Promise<DicomLo
   const { rows, cols } = parsed[0]!.slice;
   const consistent = parsed.filter((p) => p.slice.rows === rows && p.slice.cols === cols);
   if (consistent.length < parsed.length) {
-    warnings.push(
-      `${parsed.length - consistent.length} slice(s) had a different matrix size than the first slice and were dropped.`,
-    );
-    skipped += parsed.length - consistent.length;
+    const dropped = parsed.length - consistent.length;
+    warnings.push(`${dropped} slice(s) had a different matrix size than the first slice and were dropped.`);
+    for (const p of parsed) {
+      if (p.slice.rows !== rows || p.slice.cols !== cols) {
+        skipped.push({ filename: "(matrix mismatch)", reason: "inconsistent-matrix-size", detail: `${p.slice.cols}x${p.slice.rows}` });
+      }
+    }
   }
 
   consistent.sort((a, b) => a.slice.z - b.slice.z);
@@ -172,10 +197,18 @@ export async function loadDicomSeries(files: File[] | FileList): Promise<DicomLo
       modality: first.string("x00080060"),
       seriesDescription: first.string("x0008103e"),
       sliceCount: depth,
-      skippedFiles: skipped,
+      skippedFiles: skipped.length,
       sourceFormat: "dicom",
     },
   };
 
-  return { volume, skippedFiles: skipped, warnings };
+  return { volume, skippedFiles: skipped.length, skipped, warnings };
+}
+
+function summarizeSkipReasons(skipped: SkippedFile[]): string {
+  if (skipped.length === 0) return "";
+  const counts = new Map<SkipReason, number>();
+  for (const s of skipped) counts.set(s.reason, (counts.get(s.reason) ?? 0) + 1);
+  const parts = [...counts.entries()].map(([reason, count]) => `${count} ${reason}`);
+  return `Skipped: ${parts.join(", ")}.`;
 }

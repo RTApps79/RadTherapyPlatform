@@ -54,10 +54,21 @@ describe("dicomSeriesLoader", () => {
 
   it("reports skipped files rather than throwing when some inputs aren't usable DICOM", async () => {
     const files = [...DICOM_FIXTURE_FILES.map(loadFixtureAsFile), new File([new Uint8Array([1, 2, 3])], "not-dicom.txt")];
-    const { volume, skippedFiles } = await loadDicomSeries(files);
+    const { volume, skippedFiles, skipped } = await loadDicomSeries(files);
 
     expect(skippedFiles).toBe(1);
     expect(volume.depth).toBe(DICOM_FIXTURE_FILES.length);
+    expect(skipped).toHaveLength(1);
+    expect(skipped[0]?.filename).toBe("not-dicom.txt");
+    expect(skipped[0]?.reason).toBe("not-dicom");
+  });
+
+  it("distinguishes a non-image DICOM object (e.g. a Structured Report) with its own skip reason", async () => {
+    const files = [...DICOM_FIXTURE_FILES.map(loadFixtureAsFile), loadFixtureAsFile("synthetic-dicom-no-pixels.dcm")];
+    const { skipped } = await loadDicomSeries(files);
+
+    const reportSkip = skipped.find((s) => s.filename === "synthetic-dicom-no-pixels.dcm");
+    expect(reportSkip?.reason).toBe("no-pixel-data");
   });
 
   it("throws a clear error when no file is usable DICOM", async () => {

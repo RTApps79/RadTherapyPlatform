@@ -230,6 +230,12 @@ export const DicomStudioModule: ModuleDefinition = {
         const result = await dicomImport.importDicomSeries(files, "dicom-studio-upload");
         if (myToken !== loadToken) return;
         setPrimaryVolume(result.volume, `DICOM series (${result.volume.depth} slices)`);
+        if (result.skippedFiles) {
+          const grouped = new Map<string, number>();
+          for (const s of result.skipped ?? []) grouped.set(s.reason, (grouped.get(s.reason) ?? 0) + 1);
+          const summary = [...grouped.entries()].map(([reason, count]) => `${count} ${reason.replace(/-/g, " ")}`).join(", ");
+          statusEl.textContent += ` — skipped ${result.skippedFiles}: ${summary}`;
+        }
       } catch (err) {
         if (myToken !== loadToken) return;
         statusEl.textContent = `Failed to load DICOM: ${(err as Error).message}`;

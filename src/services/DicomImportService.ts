@@ -16,7 +16,7 @@ import type { Logger } from "@core/Logger";
 import type { ImageStack, Series, Modality } from "@models/index";
 import type { ImagingDatasetRegistry } from "./ImagingDatasetRegistry";
 import type { StudySeriesService } from "./StudySeriesService";
-import { loadDicomSeries } from "./imaging/dicomSeriesLoader";
+import { loadDicomSeries, type SkippedFile } from "./imaging/dicomSeriesLoader";
 import { loadNiftiVolume } from "./imaging/niftiVolumeLoader";
 import { generateSyntheticPhantom } from "./imaging/syntheticPhantom";
 import type { Volume } from "./imaging/Volume";
@@ -26,6 +26,7 @@ export interface ImportResult {
   series: Series;
   volume: Volume;
   skippedFiles?: number;
+  skipped?: SkippedFile[];
 }
 
 export class DicomImportService {
@@ -40,12 +41,15 @@ export class DicomImportService {
     const fileArray = Array.from(files);
     this.logger.info(`importDicomSeries: ${fileArray.length} file(s) for study "${studyId}"`);
 
-    const { volume, skippedFiles } = await loadDicomSeries(fileArray);
+    const { volume, skippedFiles, skipped } = await loadDicomSeries(fileArray);
     if (skippedFiles > 0) {
-      this.logger.warn(`importDicomSeries: skipped ${skippedFiles} unusable file(s)`);
+      const grouped = new Map<string, number>();
+      for (const s of skipped) grouped.set(s.reason, (grouped.get(s.reason) ?? 0) + 1);
+      const summary = [...grouped.entries()].map(([reason, count]) => `${count}x ${reason}`).join(", ");
+      this.logger.warn(`importDicomSeries: skipped ${skippedFiles} file(s) — ${summary}`, skipped);
     }
 
-    return this.register(studyId, modality, volume, "dicom", skippedFiles);
+    return this.register(studyId, modality, volume, "dicom", skippedFiles, skipped);
   }
 
   /** Import a NIfTI (.nii.gz) volume from a URL — e.g. the shared imaging library. */
@@ -68,9 +72,11 @@ export class DicomImportService {
     volume: Volume,
     sourceFormat: ImageStack["sourceFormat"],
     skippedFiles?: number,
+    skipped?: SkippedFile[],
   ): ImportResult {
+    const study = this.studySeriesService.getOrCreateStudy(studyId);
     const series = this.studySeriesService.addSeries({
-      studyId,
+      studyId: study.id,
       modality,
       description: volume.meta.seriesDescription,
     });
@@ -87,6 +93,6 @@ export class DicomImportService {
       `Registered dataset "${imageStack.id}" (${volume.cols}x${volume.rows}x${volume.depth}, ${volume.meta.sourceFormat})`,
     );
 
-    return { imageStack, series, volume, skippedFiles };
+    return { imageStack, series, volume, skippedFiles, skipped };
   }
 }

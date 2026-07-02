@@ -26,6 +26,28 @@ export class StudySeriesService {
     return study;
   }
 
+  /**
+   * Get an existing study by a caller-chosen id, creating it on first use
+   * if it doesn't exist yet. `createStudy()` always self-generates its id,
+   * which is right for patient-linked studies (OIS/Patient Library flows)
+   * but doesn't fit callers — like DicomImportService's ad-hoc loads —
+   * that want a stable, predictable id (e.g. "dicom-studio-upload") to
+   * key repeated imports against, not tied to a specific patient record.
+   */
+  getOrCreateStudy(id: EntityId, patientId: EntityId = "unassigned"): ImagingStudy {
+    const existing = this.studies.get(id);
+    if (existing) return existing;
+
+    const study: ImagingStudy = {
+      id,
+      patientId,
+      seriesIds: [],
+      createdAt: new Date().toISOString(),
+    };
+    this.studies.set(id, study);
+    return study;
+  }
+
   addSeries(input: Omit<Series, "id" | "createdAt">): Series {
     const study = this.studies.get(input.studyId);
     if (!study) throw new Error(`StudySeriesService: no study with id "${input.studyId}"`);
